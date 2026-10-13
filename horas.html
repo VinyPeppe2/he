@@ -1,0 +1,1713 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle de Horas Extras e Lanches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap">
+<style>
+/* Layout: cabeçalho fixo com abas; painel em cartões + gráficos; lançamento em modal; configurações do RH em abas. */
+:root{
+  --bg:#f3f6fb; --surface:#ffffff; --surface2:#e9eef7; --line:#d6deec; --fg:#0f1a2b; --muted:#566782;
+  --accent:#2563eb; --accent-fg:#ffffff; --accent-soft:#dbe7fd; --inputbg:#ffffff; --glow:rgba(37,99,235,.10);
+  --warm:#b45f06; --warm-soft:#f7e6cf;
+  --ok:#1b7a43; --ok-soft:#d9efe2; --warn:#8a5a00; --warn-soft:#faedc9; --bad:#b3261e; --bad-soft:#f8dedb; --bad-fg:#ffffff;
+  --c1:#2563eb; --c2:#c47a10; --c3:#0f9488; --c4:#b03a86; --c5:#5f8f1f; --c6:#76708a;
+  --shadow:0 1px 2px rgba(15,26,43,.06),0 4px 14px rgba(15,26,43,.05);
+  --font:"DM Sans","Segoe UI Variable","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --display:"Syne","DM Sans","Segoe UI Variable",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#060a11; --surface:#0f1624; --surface2:#162033; --line:#1f2b40; --fg:#e7edf8; --muted:#8c9bb6;
+    --accent:#3b82f6; --accent-fg:#ffffff; --accent-soft:#14284d; --inputbg:#0b111c; --glow:rgba(59,130,246,.18);
+    --warm:#e3a24c; --warm-soft:#3d2c12;
+    --ok:#5fcf8b; --ok-soft:#143a25; --warn:#e8b94a; --warn-soft:#3b2f0d; --bad:#f08278; --bad-soft:#42201d; --bad-fg:#2a0b08;
+    --c1:#5b9bff; --c2:#e3a24c; --c3:#2fc4b2; --c4:#e07fb8; --c5:#9dc058; --c6:#a3a0b8;
+    --shadow:0 1px 2px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+    --bg:#060a11; --surface:#0f1624; --surface2:#162033; --line:#1f2b40; --fg:#e7edf8; --muted:#8c9bb6;
+    --accent:#3b82f6; --accent-fg:#ffffff; --accent-soft:#14284d; --inputbg:#0b111c; --glow:rgba(59,130,246,.18);
+    --warm:#e3a24c; --warm-soft:#3d2c12;
+    --ok:#5fcf8b; --ok-soft:#143a25; --warn:#e8b94a; --warn-soft:#3b2f0d; --bad:#f08278; --bad-soft:#42201d; --bad-fg:#2a0b08;
+    --c1:#5b9bff; --c2:#e3a24c; --c3:#2fc4b2; --c4:#e07fb8; --c5:#9dc058; --c6:#a3a0b8;
+    --shadow:0 1px 2px rgba(0,0,0,.5);
+    color-scheme:dark;
+}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;position:absolute;left:0;top:0;width:100%;padding:18px;color:#000;background:#fff;font:12px/1.4 Arial,sans-serif}
+  #printArea table{width:100%;border-collapse:collapse;font-size:11px}
+  #printArea th,#printArea td{border:1px solid #888;padding:4px 6px;text-align:left}
+}
+#printArea{display:none}
+@media print{
+  html:root:root:root{--bg:#fff;--surface:#fff;--surface2:#eceff5;--line:#c9d1e0;--fg:#0f1a2b;--muted:#4b5a75;--accent:#2563eb;--accent-soft:#dbe7fd;--warm:#b45f06;--warn:#8a5a00;--warn-soft:#faedc9;--ok:#1b7a43;--bad:#b3261e;--c1:#2563eb;--c2:#c47a10;--c3:#0f9488;--c4:#b03a86;--c5:#5f8f1f;--c6:#76708a;--shadow:none;color-scheme:light}
+  body{background:#fff!important}
+  #printArea .printvis{display:grid;gap:10px;margin:0 0 12px}
+  #printArea .kpi,#printArea .panel{box-shadow:none;border:1px solid #c9d1e0;break-inside:avoid;background:#fff}
+  #printArea .kpi{padding:8px 10px}#printArea .kn{font-size:1.3rem}#printArea .kn.txt{font-size:.9rem}
+  #printArea .rcards,#printArea .kpis{grid-template-columns:repeat(4,1fr);gap:8px}
+  #printArea .grid2{grid-template-columns:1fr 1fr;gap:10px}
+  #printArea .panel{padding:10px}
+  #printArea svg.col{max-width:100%}
+  #printArea .btn{display:none}
+  #printArea h2{font-size:.9rem}
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);-webkit-text-size-adjust:100%}
+h1{font-size:1.35rem;margin:0;letter-spacing:-.01em}
+h2{font-size:1rem;margin:0 0 .6rem}
+p{margin:0 0 .6rem}
+.muted{color:var(--muted)} .small{font-size:.82rem}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:16px}
+main.wrap{padding-block:16px 96px;display:grid;gap:14px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+header.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
+.brand small{display:block;font-weight:600;color:var(--muted);font-size:.68rem;letter-spacing:.07em;text-transform:uppercase}
+.mark{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-fg);font-weight:800;font-size:1.1rem}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;max-width:100%;flex:1 1 auto}
+.tab{font:inherit;font-weight:600;padding:.5rem .85rem;border-radius:8px;border:0;background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;min-height:38px}
+.tab[aria-current=page]{background:var(--accent-soft);color:var(--accent)}
+.who{display:flex;align-items:center;gap:10px;margin-left:auto}
+.who span{display:block;line-height:1.2}.who small{display:block;color:var(--muted)}
+
+.btn{font:inherit;font-weight:600;padding:.5rem .9rem;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;min-height:40px}
+.btn:hover{background:var(--surface2)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:var(--bad);color:var(--bad-fg);border-color:var(--bad)}
+.btn.sm{min-height:32px;padding:.2rem .6rem;font-size:.85rem}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:15;border-radius:999px;padding:.85rem 1.2rem;box-shadow:0 6px 20px rgba(0,0,0,.28)}
+
+.fld{display:grid;gap:4px;font-weight:600;font-size:.85rem;min-width:0}
+.fld.grow{flex:1 1 220px}
+input,select,textarea{font:inherit;font-weight:400;padding:.5rem .65rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-height:40px;width:100%;min-width:0}
+textarea{resize:vertical}
+.chk{display:flex;gap:.5rem;align-items:center;font-weight:500;min-height:40px}
+.chk input{width:auto;min-height:0}
+.err{color:var(--bad);font-weight:600}.err:empty{display:none}
+.two{align-items:start;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.row{display:flex;gap:8px;align-items:center}.row>select,.row>input{flex:1}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.pagehead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.filters{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar .sp{flex:1}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.kl{font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kn{font-size:2rem;font-weight:750;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px}
+.ks{color:var(--muted);font-size:.82rem;min-height:1.2em}
+.kpi.warm .kn{color:var(--warm)}
+.kpi.attn .kn{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:12px}
+
+.bars{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.bars li{display:grid;grid-template-columns:minmax(70px,34%) 1fr auto;gap:10px;align-items:center}
+.bl,.bl2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.25;overflow-wrap:anywhere}
+.bt{height:12px;background:var(--surface2);border-radius:6px;overflow:hidden}
+.bt i{display:block;height:100%;border-radius:6px}
+.bv{font-variant-numeric:tabular-nums;font-weight:600;min-width:3.2em;text-align:right}
+.badge{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;font-size:.7rem;font-weight:700;background:var(--warn-soft);color:var(--warn)}
+svg.col{width:100%;max-width:640px;height:auto;display:block}
+.col .bar{fill:var(--accent)}.col .gl{stroke:var(--line);stroke-width:1}.col .ax{fill:var(--muted);font-size:11px;font-family:inherit}
+.donutbox{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+svg.donut{width:150px;height:150px;flex:none}.donut .dn{font-size:5px;font-weight:700;fill:var(--fg);font-family:inherit}
+.legend{grid-template-columns:minmax(0,1fr);list-style:none;margin:0;padding:0;display:grid;gap:6px;flex:1 1 180px;min-width:0}
+.legend li{display:flex;gap:8px;align-items:center}.legend i{width:10px;height:10px;border-radius:3px;flex:none}
+.legend span.t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend b{font-variant-numeric:tabular-nums;font-weight:600}
+.empty{text-align:center;padding:28px 12px;color:var(--muted)}
+
+.tblwrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
+.tbl td.act{white-space:nowrap}.tbl td.act .btn{margin:0 4px 0 0}
+.tbl td small{display:block;color:var(--muted);max-width:34ch}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.p-pendente{background:var(--warn-soft);color:var(--warn)}.p-aprovado{background:var(--ok-soft);color:var(--ok)}.p-recusado{background:var(--bad-soft);color:var(--bad)}
+@media (max-width:760px){
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tfoot{display:block}
+  .tbl tr{display:block;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;padding:6px 4px;background:var(--surface)}
+  .tbl td{display:flex;justify-content:space-between;gap:14px;border:0;padding:4px 8px;text-align:right}
+  .tbl td::before{content:attr(data-label);color:var(--muted);font-weight:600;text-align:left;flex:none}
+  .tbl td small{max-width:none}
+  .tbl td.act{justify-content:flex-start;flex-wrap:wrap}.tbl td.act::before{display:none}
+  .tbl tfoot td{border-top:0}
+}
+
+.subtabs{display:flex;gap:6px;overflow-x:auto}
+.subtabs .tab{border:1px solid var(--line);background:var(--surface)}
+.subtabs .tab[aria-current=page]{border-color:var(--accent)}
+.crudform{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;align-items:end}
+.crudform h2,.crudform>p,.crudform .crudbtns,.crudform .wide{grid-column:1/-1}
+.crudbtns{display:flex;gap:8px;flex-wrap:wrap}
+.danger-zone{border-color:var(--bad)}
+
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);padding:0;width:min(94vw,520px);max-height:92dvh;box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden}
+dialog.lg{width:min(94vw,640px)}
+dialog::backdrop{background:rgba(6,16,16,.6)}
+.dlgbox{padding:20px;display:grid;gap:14px;max-height:92dvh;overflow:auto}
+.dlgact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+@media (max-width:560px){dialog.lg{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;margin:0}.dlgbox{max-height:100dvh}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.chips:empty{display:none}
+.chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent);padding:3px 4px 3px 11px;border-radius:999px;font-weight:600}
+.chip button{border:0;background:transparent;color:inherit;font-size:1.15rem;line-height:1;cursor:pointer;padding:0 6px}
+.info{background:var(--surface2);border-radius:8px;padding:.6rem .8rem;display:grid;gap:4px}
+.info .w{color:var(--warn);font-weight:600}.info .bad{color:var(--bad);font-weight:600}
+
+.loginwrap{min-height:100dvh;display:grid;place-items:center;padding:16px}
+.logincard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;width:min(100%,400px);display:grid;gap:14px;box-shadow:var(--shadow)}
+.logincard .brand{font-size:1.15rem}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:.6rem 1rem;border-radius:10px;font-weight:600;z-index:60;max-width:90vw;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+@media (prefers-reduced-motion:no-preference){#toast{animation:tin .18s ease-out}@keyframes tin{from{opacity:0;transform:translate(-50%,8px)}}}
+
+.sw{position:relative;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.sw:last-child{border-bottom:0}
+.sw .sl{display:grid;gap:2px;min-width:0}.sw .sl b{font-weight:600}.sw .sl small{color:var(--muted)}
+.sw input{position:absolute;opacity:0;width:44px;height:26px;right:0;margin:0;cursor:pointer}
+.sw .tg{flex:none;width:44px;height:26px;border-radius:999px;background:var(--surface2);border:1px solid var(--line);position:relative;transition:background .15s}
+.sw .tg::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.sw input:checked+.tg{background:var(--accent);border-color:var(--accent)}
+.sw input:checked+.tg::after{transform:translateX(18px);background:var(--accent-fg)}
+.sw input:focus-visible+.tg{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.sw .tg,.sw .tg::after{transition:none}}
+.qa{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;padding:10px;border:1px dashed var(--line);border-radius:8px;background:var(--surface2)}
+.qa input{flex:1 1 140px;min-height:36px}
+.btn.plus{padding:.5rem .8rem;font-size:1.1rem;line-height:1;flex:none}
+.srow{display:grid;grid-template-columns:minmax(90px,36%) 1fr auto;gap:10px;align-items:center}
+.stack{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.st{display:flex;height:14px;background:var(--surface2);border-radius:7px;overflow:hidden}
+.st i{display:block;height:100%;border-right:1px solid var(--surface)}
+.legend.inline{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;flex:none}
+.legend.inline li{gap:6px}
+.col .vl{fill:var(--fg);font-size:10px;font-weight:600;font-family:inherit}
+.col .ln{fill:none;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.sumbox{background:var(--surface2);border-radius:10px;padding:10px;text-align:center}
+.sumbox b{display:block;font-size:1.2rem;font-variant-numeric:tabular-nums}
+.sumbox span{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.rule{grid-column:1/-1;background:var(--warm-soft);color:var(--fg);border-radius:10px;padding:10px 12px;font-size:.88rem}
+.kpi .kn.txt{font-size:1.05rem;line-height:1.3;letter-spacing:0;font-weight:700;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:.7rem;font-weight:700;background:var(--surface2);color:var(--muted)}
+.tag.t-warn{background:var(--warn-soft);color:var(--warn)}
+.p-rascunho{background:var(--surface2);color:var(--muted)}.p-enviado{background:var(--ok-soft);color:var(--ok)}
+.sigline{display:flex;gap:24px;margin:10px 0}
+.linkbtn{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:6px 0;text-decoration:underline}
+.pwtoggle{font-weight:500}
+
+/* ---- ícones, login, relatórios ---- */
+.ic{width:1.1em;height:1.1em;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.18em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem}
+.btn.icon{padding:.3rem .5rem;min-height:32px;min-width:34px}
+.btn.icon .lbl{display:none}
+.btn.warnbtn{color:var(--bad);border-color:var(--bad)}
+.btn.warnbtn:hover{background:var(--bad-soft)}
+.btn.okbtn{color:var(--ok);border-color:var(--ok)}
+.btn.okbtn:hover{background:var(--ok-soft)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface2)}
+.themebtn{min-height:36px;min-width:36px;padding:.3rem}
+@media (max-width:760px){.btn.icon .lbl{display:inline}}
+.loginwrap{background:radial-gradient(900px 500px at 78% -8%,var(--glow),transparent 60%),var(--bg)}
+.logincard{padding:0;gap:0;overflow:hidden;border-radius:18px;width:min(100%,440px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.lhead{padding:28px 28px 22px;border-bottom:1px solid var(--line);background:radial-gradient(260px 160px at 85% 0%,var(--glow),transparent 70%);position:relative}
+.leyebrow{font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.ltitle{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1.05;letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+.lsub{margin:0;color:var(--muted)}
+.lbody{padding:22px 28px 28px;display:grid;gap:16px}
+.lbody .fld{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.lbody input{background:var(--inputbg);min-height:46px;border-radius:10px;font-size:.95rem;text-transform:none;letter-spacing:0}
+.pwwrap{position:relative}.pwwrap input{padding-right:2.6rem}
+.pwwrap .ic{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);color:var(--warn);pointer-events:none}
+.lbody .btn.primary{min-height:48px;font-size:1rem;border-radius:10px}
+.ltheme{position:absolute;top:14px;right:14px}
+.mini{color:var(--muted);font-size:.8rem}
+.rcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px}
+.sec2{display:grid;gap:12px}
+@media print{#printArea .sheet{page-break-after:always;break-after:page}#printArea .sheet:last-child{page-break-after:auto}}
+.pagehead .sp{flex:1}
+.grid2>*{min-width:0}
+.exgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;margin-top:12px}.exc{min-width:0;overflow:hidden}.exc .legend{flex:none;width:100%}.exc .donutbox{flex-direction:column;align-items:stretch;gap:12px}.exc .donutbox svg.donut{width:170px;height:170px;align-self:center}.exc svg.col{max-width:100%;height:auto}
+@media (max-width:900px){.exgrid{grid-template-columns:minmax(0,1fr)}}
+.insgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.ins{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface2)}
+.ins h3{margin:6px 0 4px;font-size:.95rem}.ins p{margin:0;color:var(--muted);font-size:.85rem}
+.tag.t-ok{background:var(--ok-soft);color:var(--ok)}
+.abcs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.abc{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:2px;font-size:.8rem}
+.abc strong{font-size:1.1rem}.abc small{color:var(--muted)}
+.heatscroll{overflow-x:auto;padding-bottom:6px}
+.heatmo{display:flex;gap:3px;font-size:.62rem;color:var(--muted);height:14px}.heatmo span{width:12px;flex:none;white-space:nowrap;overflow:visible}
+.heat{display:flex;gap:3px}.heat>div{display:grid;gap:3px}
+.hc{display:block;width:12px;height:12px;border-radius:3px;background:var(--surface2);border:1px solid var(--line)}
+.hc.l1{background:color-mix(in srgb,var(--accent) 25%,transparent)}.hc.l2{background:color-mix(in srgb,var(--accent) 50%,transparent)}
+.hc.l3{background:color-mix(in srgb,var(--accent) 75%,transparent)}.hc.l4{background:var(--accent)}.hc.lx{visibility:hidden}
+.heatleg{display:flex;gap:4px;align-items:center;font-size:.7rem;color:var(--muted);margin-top:8px}
+.narrating-block{outline:2px solid var(--accent);outline-offset:3px;border-radius:12px;transition:outline .2s}
+#narrator{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:60;width:min(94vw,720px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:10px 12px;display:grid;gap:8px}
+#narr-caption{font-size:.95rem;line-height:1.4;min-height:2.6em}
+.narr-word{background:var(--accent);color:#fff;border-radius:4px;padding:0 2px}
+.narr-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.narr-ctl select{min-height:34px;max-width:200px}
+@media print{#narrator{display:none!important}}
+.demobar{background:var(--warn);color:#111;text-align:center;font-weight:700;font-size:.75rem;letter-spacing:.08em;padding:4px 8px;position:sticky;top:0;z-index:70}
+@media print{.demobar{display:none}}
+</style>
+<script>try{var t=localStorage.getItem('he_theme')||'dark';document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','dark')}</script>
+</head>
+<body>
+<noscript>Este sistema precisa de JavaScript.</noscript>
+<div id="app"></div>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status" hidden></div>
+<div id="narrator" hidden role="region" aria-label="Narração"><div id="narr-caption" aria-live="polite"></div><div class="narr-ctl">
+<button class="btn sm" data-act="narr-prev" aria-label="Anterior"><svg class="ic" viewBox="0 0 24 24"><path d="M19 20 9 12l10-8Z"/><path d="M5 4v16"/></svg></button>
+<button class="btn sm primary" id="narr-play" data-act="narr-play" aria-label="Pausar"><svg class="ic" viewBox="0 0 24 24"><path d="M8 4v16M16 4v16"/></svg></button>
+<button class="btn sm" data-act="narr-next" aria-label="Próximo"><svg class="ic" viewBox="0 0 24 24"><path d="m5 4 10 8-10 8Z"/><path d="M19 4v16"/></svg></button>
+<span id="narr-progress" class="muted small"></span>
+<select id="narr-voice" aria-label="Voz"></select>
+<select id="narr-speed" aria-label="Velocidade"><option value="0.85">0,85x</option><option value="1" selected>1x</option><option value="1.2">1,2x</option><option value="1.5">1,5x</option></select>
+<button class="btn sm" data-act="narr-stop" aria-label="Fechar"><svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>
+<div id="printArea"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+'use strict';
+/* ================= utilidades ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const pad = n => String(n).padStart(2, '0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const fmtDate = iso => iso ? iso.split('-').reverse().join('/') : '';
+const fmtH = min => { const t = Math.round(min); const h = Math.floor(t / 60), m = t % 60; return m ? `${h}h${pad(m)}` : `${h}h`; };
+const money = n => (n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
+const groupBy = (a, f) => { const m = new Map(); a.forEach(x => { const k = f(x); (m.get(k) || m.set(k, []).get(k)).push(x); }); return m; };
+const byName = (a, b) => a.nome.localeCompare(b.nome, 'pt-BR');
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const durMin = (s, e) => (s && e) ? (toMin(e) - toMin(s) + 1440) % 1440 : 0;
+const parseNum = s => { const n = parseFloat(String(s).replace(',', '.')); return isNaN(n) || n < 0 ? 0 : n; };
+const monthLabel = ym => { const [y, m] = ym.split('-').map(Number); const s = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }); return s.charAt(0).toUpperCase() + s.slice(1); };
+
+/* SHA-256 em JS puro (funciona também em http, onde crypto.subtle não existe) */
+function sha256(ascii) {
+  function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
+  const mp = Math.pow, mw = mp(2, 32); let i, j, result = '';
+  const words = [], bitLen = ascii.length * 8;
+  let hash = sha256.h = sha256.h || [], k = sha256.k = sha256.k || [], pc = k.length;
+  const comp = {};
+  for (let c = 2; pc < 64; c++) {
+    if (!comp[c]) {
+      for (i = 0; i < 313; i += c) comp[i] = c;
+      hash[pc] = (mp(c, .5) * mw) | 0; k[pc++] = (mp(c, 1 / 3) * mw) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii.length % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii.length; i++) { j = ascii.charCodeAt(i); if (j >> 8) return; words[i >> 2] |= j << ((3 - i) % 4) * 8; }
+  words[words.length] = ((bitLen / mw) | 0);
+  words[words.length] = bitLen;
+  for (j = 0; j < words.length;) {
+    const w = words.slice(j, j += 16); const old = hash; hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      const w15 = w[i - 15], w2 = w[i - 2], a = hash[0], e = hash[4];
+      const t1 = hash[7] + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25)) + ((e & hash[5]) ^ (~e & hash[6])) + k[i] +
+        (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))) | 0);
+      const t2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+      hash = [(t1 + t2) | 0].concat(hash); hash[4] = (hash[4] + t1) | 0;
+    }
+    for (i = 0; i < 8; i++) hash[i] = (hash[i] + old[i]) | 0;
+  }
+  for (i = 0; i < 8; i++) for (j = 3; j + 1; j--) { const b = (hash[i] >> (j * 8)) & 255; result += (b < 16 ? 0 : '') + b.toString(16); }
+  return result;
+}
+const hashPwd = (pwd, salt) => sha256(String.fromCharCode(...new TextEncoder().encode(salt + '|' + pwd)));
+
+
+/* ================= ícones (SVG embutido, herdam a cor do texto) ================= */
+const ICONS = {
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash: '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-6.7L3 9"/>',
+  down: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+  print: '<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="9" rx="2"/><path d="M7 14h10v7H7z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
+  lockc: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  out: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/>',
+  speaker: '<path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+  play: '<path d="M7 4v16l13-8Z"/>',
+  pause: '<path d="M8 4v16M16 4v16"/>',
+  prev: '<path d="M19 20 9 12l10-8Z"/><path d="M5 4v16"/>',
+  next: '<path d="m5 4 10 8-10 8Z"/><path d="M19 4v16"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  sheet: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>'
+};
+const ic = (n, cls = '') => `<svg class="ic ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`;
+/* botão: icon + texto; `only` = só ícone no desktop (com dica), texto aparece no celular */
+const ibtn = (act, icon, label, { id = '', cls = '', only = false, extra = '' } = {}) =>
+  `<button type="button" class="btn ${only ? 'icon' : ''} ${cls}" data-act="${act}" ${id ? `data-id="${id}"` : ''} ${only ? `title="${label}" aria-label="${label}"` : ''} ${extra}>${ic(icon)}<span class="lbl">${label}</span></button>`;
+
+/* ================= tema claro/escuro ================= */
+const getTheme = () => document.documentElement.getAttribute('data-theme') || 'dark';
+function setTheme(t) { document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('he_theme', t); } catch (e) {} }
+const themeBtn = (cls = '') => `<button type="button" class="btn ghost themebtn ${cls}" data-act="toggle-theme" title="${getTheme() === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}" aria-label="Alternar tema claro/escuro">${ic(getTheme() === 'dark' ? 'sun' : 'moon')}</button>`;
+/* ================= camada de dados (IndexedDB) =================
+   Toda a persistência passa por DB.*. Ao migrar para Node + SQLite basta trocar este objeto
+   por chamadas fetch('/api/...'); o resto do código continua igual. */
+const STORES = { users: 'id', sectors: 'id', employees: 'id', reasons: 'id', snacks: 'id', rules: 'id', entries: 'id', settings: 'key', audit: 'id' };
+const CONFIG_STORES = ['users', 'sectors', 'employees', 'reasons', 'snacks', 'rules'];
+/* Modo de dados: 'real' (padrão) ou 'demo' (base separada, só com dados simulados). A troca fica neste navegador. */
+let MODE = 'real'; try { MODE = localStorage.getItem('he_mode') === 'demo' ? 'demo' : 'real'; } catch (e) {}
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(MODE === 'demo' ? 'he-lanche-demo' : 'he-lanche', 1); let done = false;
+      const tm = setTimeout(() => { if (!done) rej(new Error('O banco de dados está ocupado por outra aba aberta deste sistema. Feche as outras abas e recarregue.')); }, 6000);
+      r.onupgradeneeded = () => { for (const [n, k] of Object.entries(STORES)) if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n, { keyPath: k }); };
+      r.onsuccess = () => { done = true; clearTimeout(tm); this.db = r.result; this.db.onversionchange = () => { this.db.close(); }; res(); };
+      r.onerror = () => { clearTimeout(tm); rej(r.error); };
+      r.onblocked = () => {};
+    });
+  },
+  run(store, mode, fn) {
+    return new Promise((res, rej) => {
+      const t = this.db.transaction(store, mode); let out;
+      const rq = fn(t.objectStore(store)); if (rq) rq.onsuccess = () => { out = rq.result; };
+      t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+    });
+  },
+  all(store) { return this.run(store, 'readonly', s => s.getAll()); },
+  put(store, rec) { return this.run(store, 'readwrite', s => s.put(rec)); },
+  putMany(store, recs) { return this.run(store, 'readwrite', s => { recs.forEach(r => s.put(r)); }); },
+  del(store, id) { return this.run(store, 'readwrite', s => s.delete(id)); },
+  clear(store) { return this.run(store, 'readwrite', s => s.clear()); }
+};
+
+/* ================= configuração padrão (regras de negócio) =================
+   form: o que o LÍDER enxerga no formulário. perm: o que o LÍDER pode fazer. O RH sempre vê e pode tudo. */
+const DEFAULTS = {
+  empresa: '', limiteDia: 2, limiteMes: 40, limiteAtivo: true, limiteAviso: 80,
+  form: { setor: true, intervalo: true, lanche: true, quantidade: true, preco: false, apoio: true, obs: true, obsObrigatoria: false },
+  perm: { novoColab: true, novoMotivo: false, novaOpcao: false, trocarLanche: true, verCustos: false }
+};
+const FORM_FIELDS = [
+  ['setor', 'Setor', 'Mostra o setor do lançamento (o líder só lança no próprio setor).'],
+  ['intervalo', 'Intervalo (almoço/janta)', 'Permite descontar o intervalo do total de horas.'],
+  ['lanche', 'Opção de lanche', 'Desligado: o lanche é aplicado sozinho pela regra de concessão.'],
+  ['quantidade', 'Quantidade de lanches', 'Desligado: usa a quantidade padrão da regra.'],
+  ['preco', 'Preço unitário', 'Desligado: o preço vem do cadastro da opção e fica oculto.'],
+  ['apoio', 'Colaborador de outro setor (apoio)', 'Permite escolher colaboradores de outros setores.'],
+  ['obs', 'Observação', 'Campo de texto livre no fim do formulário.'],
+  ['obsObrigatoria', 'Observação obrigatória', 'Só vale quando a observação está visível.']
+];
+const PERMS = [
+  ['novoColab', 'Incluir novo colaborador pelo formulário', 'Mostra o botão ＋ ao lado do colaborador.'],
+  ['novoMotivo', 'Incluir novo motivo pelo formulário', 'Mostra o botão ＋ ao lado do motivo.'],
+  ['novaOpcao', 'Incluir nova opção de lanche pelo formulário', 'Mostra o botão ＋ ao lado do lanche.'],
+  ['trocarLanche', 'Trocar o lanche sugerido pela regra', 'Desligado: o líder não altera opção nem quantidade.'],
+  ['verCustos', 'Ver preços e custos de lanche', 'Painel, lista, relatórios e exportações do líder.']
+];
+
+/* ================= estado ================= */
+const PERFIL = { rh: 'RH', lider: 'Líder de setor', gestor: 'Gestão' };
+const S = {
+  users: [], sectors: [], employees: [], reasons: [], snacks: [], rules: [], entries: [], audit: [], settings: structuredClone(DEFAULTS),
+  me: null, view: 'dashboard', tab: 'users', edit: null, rep: 'colab', draft: null,
+  f: { month: todayISO().slice(0, 7), all: false, sectorId: '', status: '', q: '' }
+};
+const reindex = () => {
+  S.sm = new Map(S.sectors.map(x => [x.id, x])); S.em = new Map(S.employees.map(x => [x.id, x]));
+  S.rm = new Map(S.reasons.map(x => [x.id, x])); S.om = new Map(S.snacks.map(x => [x.id, x]));
+};
+const sectorName = id => S.sm.get(id)?.nome || '—';
+const empName = id => S.em.get(id)?.nome || '(removido)';
+const snackName = id => S.om.get(id)?.nome || '—';
+const reasonText = id => S.rm.get(id)?.nome || '—';
+const isOutro = id => /outro/i.test(reasonText(id));
+const reasonShow = e => { const t = reasonText(e.reasonId); return (isOutro(e.reasonId) && e.reasonOutro) ? `${t} — ${e.reasonOutro}` : t; };
+/* ordem estável: motivos pela numeração do texto ("1.", "2."...), "Outro" sempre por último; lanches pela ordem de cadastro */
+const reasonSort = (a, b) => {
+  const o = /outro/i.test(a.nome) - /outro/i.test(b.nome); if (o) return o;
+  const na = parseInt(a.nome) || 1e6, nb = parseInt(b.nome) || 1e6; return na - nb || a.nome.localeCompare(b.nome, 'pt-BR');
+};
+const snackSort = (a, b) => (a.ord ?? 1e6) - (b.ord ?? 1e6) || a.nome.localeCompare(b.nome, 'pt-BR');
+const nextOrd = list => 1 + Math.max(0, ...list.map(x => x.ord || 0));
+async function reload(store) {
+  if (store === 'settings') {
+    const c = (await DB.all('settings')).find(x => x.key === 'cfg') || {};
+    S.settings = { ...DEFAULTS, ...c, form: { ...DEFAULTS.form, ...(c.form || {}) }, perm: { ...DEFAULTS.perm, ...(c.perm || {}) } };
+    return;
+  }
+  S[store] = await DB.all(store);
+  if (store === 'reasons') S.reasons.sort(reasonSort); else if (store === 'snacks') S.snacks.sort(snackSort);
+  reindex();
+  if (store === 'users' && S.me) S.me = S.users.find(u => u.id === S.me.id) || null;
+}
+async function loadAll() { for (const s of [...CONFIG_STORES, 'entries', 'audit', 'settings']) await reload(s); }
+async function saveSettings() { await DB.put('settings', { key: 'cfg', ...S.settings }); }
+async function log(action, detail = '') {
+  await DB.put('audit', { id: uid(), at: new Date().toISOString(), user: S.me?.nome || '—', action, detail });
+  S.audit = await DB.all('audit');
+  if (S.audit.length > 600) { const old = S.audit.sort((a, b) => a.at.localeCompare(b.at)).slice(0, S.audit.length - 500); for (const o of old) await DB.del('audit', o.id); S.audit = await DB.all('audit'); }
+}
+
+/* ================= permissões e regras de visibilidade ================= */
+const isRH = () => S.me.perfil === 'rh';
+const canWrite = () => S.me.perfil === 'rh' || S.me.perfil === 'lider';
+const scopeSector = () => S.me.perfil === 'lider' ? S.me.sectorId : null;
+const fshow = k => isRH() || !!S.settings.form[k];       // campo visível no formulário
+const can = k => isRH() || !!S.settings.perm[k];          // ação permitida
+const showMoney = () => S.me.perfil !== 'lider' || !!S.settings.perm.verCustos;
+const canEdit = e => isRH() || (S.me.perfil === 'lider' && e.sectorId === S.me.sectorId && e.status === 'rascunho');
+const snackLabel = o => o.nome;
+/* ---- teto mensal de horas por colaborador (switch + valor editados pelo RH) ---- */
+const limMes = () => (S.settings.limiteAtivo !== false && S.settings.limiteMes > 0) ? S.settings.limiteMes : 0;
+const limAviso = () => Math.min(99, Math.max(1, S.settings.limiteAviso || 80));
+function teto(ym = (S.f.all ? todayISO().slice(0, 7) : S.f.month)) { // uso do mês por colaborador, respeitando o setor do filtro/perfil
+  const L = limMes(); if (!L) return null; const sec = scopeSector() || S.f.sectorId || '';
+  const rows = [...groupBy(S.entries.filter(e => e.date.slice(0, 7) === ym && (!sec || e.sectorId === sec)), e => e.empId)].map(([id, a]) => { const v = sum(a, e => e.min); return { id, l: empName(id), v, pct: v / (L * 60) * 100, sec: a[0].sectorId }; }).sort((a, b) => b.v - a.v);
+  const A = limAviso(); rows.forEach(r => { r.st = r.pct > 100 ? 'over' : r.pct >= 100 ? 'full' : r.pct >= A ? 'near' : 'ok'; });
+  return { ym, L, A, rows, over: rows.filter(r => r.st === 'over' || r.st === 'full'), near: rows.filter(r => r.st === 'near') };
+}
+function filtered(extra = () => true) {
+  const sc = scopeSector();
+  return S.entries.filter(e => (!sc || e.sectorId === sc) && (sc || !S.f.sectorId || e.sectorId === S.f.sectorId) &&
+    (S.f.all || e.date.slice(0, 7) === S.f.month) && extra(e));
+}
+const periodLabel = () => S.f.all ? 'Todo o período' : monthLabel(S.f.month);
+
+/* ================= cálculo de horas e regra de lanche ================= */
+function calcHoras(start, end, hasInt, intIni, intFim) {
+  const bruta = durMin(start, end);
+  let inter = (hasInt && intIni && intFim) ? durMin(intIni, intFim) : 0;
+  if (inter > bruta) inter = bruta;
+  return { bruta, inter, liq: Math.max(0, bruta - inter) };
+}
+const cost = e => e.opcaoId ? (e.qtd || 0) * (e.preco || 0) : 0;
+const ehFDS = ds => { const d = new Date(ds + 'T12:00:00'); return d.getDay() === 0 || d.getDay() === 6; };
+function regraAplicavel(date, start, end, bruta) {
+  if (!date || !start || !end) return null;
+  const fds = ehFDS(date), cruzou = toMin(end) <= toMin(start);
+  for (const r of S.rules.filter(x => x.ativo !== false)) {
+    const dia = r.tipoDia === 'todos' || ((r.tipoDia === 'fds') === fds);
+    const min = !r.minHoras || bruta >= (+r.minHoras) * 60;
+    const lim = !r.horaLimite || cruzou || toMin(end) >= toMin(r.horaLimite);
+    if (dia && min && lim) return r;
+  }
+  return null;
+}
+function descRegra(r) {
+  if (!r) return 'Sem regra de concessão para este cenário.';
+  const dia = { semana: 'Dia de semana', fds: 'Fim de semana', todos: 'Qualquer dia' }[r.tipoDia] || r.tipoDia, cond = [];
+  if (r.minHoras) cond.push('HE ≥ ' + r.minHoras + 'h'); if (r.horaLimite) cond.push('trabalhou até ≥ ' + r.horaLimite);
+  const perm = (r.opcoesPermitidas || []).map(snackName).join(', ') || 'qualquer';
+  const sug = r.sugestao ? `Sugestão automática: <b>${esc(snackName(r.sugestao))}</b>${r.qtdPadrao > 1 ? ' (qtd ' + r.qtdPadrao + ')' : ''}` : `Sem sugestão fixa. Opções: ${esc(perm)}`;
+  return `Regra: <b>${dia}</b> · ${cond.join(' e ') || 'sempre'} → ${sug}`;
+}
+function descRegraCurta(r) {
+  const dia = { semana: 'Seg–Sex', fds: 'Sáb–Dom', todos: 'Qualquer dia' }[r.tipoDia] || r.tipoDia, cond = [];
+  if (r.minHoras) cond.push('HE ≥ ' + r.minHoras + 'h'); if (r.horaLimite) cond.push('até ≥ ' + r.horaLimite);
+  const perm = (r.opcoesPermitidas || []).map(snackName).join(', ') || 'qualquer';
+  return `${dia} · ${cond.join(' e ') || 'sempre'} → ${r.sugestao ? snackName(r.sugestao) : 'escolha do líder'} [${perm}]`;
+}
+
+/* ================= CSV / XLSX ================= */
+function csvCell(v) {
+  let s = v == null ? '' : String(v);
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s)) s = "'" + s; // evita fórmulas no Excel
+  if (/[;"\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+const toCSV = rows => '﻿' + rows.map(r => r.map(csvCell).join(';')).join('\r\n');
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const first = text.split(/\r?\n/, 1)[0];
+  const delim = (first.match(/;/g) || []).length >= (first.match(/,/g) || []).length ? ';' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(x => x !== '')) rows.push(row); row = []; }
+    else cur += c;
+  }
+  row.push(cur); if (row.some(x => x !== '')) rows.push(row);
+  return rows;
+}
+function downloadBlob(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const download = (name, text) => downloadBlob(name, text, 'text/csv;charset=utf-8');
+const num2 = n => (+n || 0).toFixed(2).replace('.', ',');
+function entryCols() { const m = showMoney(); return ['id', 'data', 'setor', 'colaborador', 'apoio', 'motivo', 'motivo_outro', 'inicio', 'fim', 'intervalo_inicio', 'intervalo_fim', 'horas_liquidas', 'lanche', 'quantidade', ...(m ? ['preco_unitario', 'custo'] : []), 'observacao', 'trocado', 'status', 'lancado_por', 'criado_em', 'atualizado_em']; }
+function entryRowOf(e) {
+  const m = showMoney();
+  return [e.id, e.date, sectorName(e.sectorId), empName(e.empId), e.apoio ? 'sim' : '', reasonText(e.reasonId), e.reasonOutro || '', e.start, e.end, e.hasInt ? e.intIni : '', e.hasInt ? e.intFim : '', num2(e.min / 60),
+    e.opcaoId ? snackName(e.opcaoId) : '', e.opcaoId ? e.qtd : '', ...(m ? [e.opcaoId ? num2(e.preco) : '', e.opcaoId ? num2(cost(e)) : ''] : []), e.obs || '', e.trocado ? 'sim' : '', e.status, e.by, e.createdAt, e.updatedAt];
+}
+const sortedByDate = list => list.slice().sort((a, b) => a.date.localeCompare(b.date) || (a.start || '').localeCompare(b.start || ''));
+function exportEntries(list, name, xlsx = false) {
+  if (!list.length) return toast('Não há lançamentos para exportar.');
+  const rows = [entryCols(), ...sortedByDate(list).map(entryRowOf)];
+  if (xlsx && window.XLSX) {
+    const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = rows[0].map(() => ({ wch: 16 }));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Horas Extras'); XLSX.writeFile(wb, name + '.xlsx');
+    return toast('Excel (.xlsx) gerado.');
+  }
+  download(name + '.csv', toCSV(rows));
+  toast(xlsx ? 'Sem internet para o .xlsx: gerei CSV.' : `${list.length} lançamentos exportados.`);
+}
+function printReport({ title, sub, head, rows, foot, pre = '' }) {
+  const t = h => `<th>${esc(h)}</th>`;
+  $('#printArea').innerHTML = `<h2 style="margin:0 0 4px">${esc(title)}</h2>
+    <p style="margin:0 0 2px"><b>Relatório:</b> ${esc(sub)} &nbsp; <b>Emitido por:</b> ${esc(S.me.nome)} em ${new Date().toLocaleString('pt-BR')}</p>
+    <p style="margin:0 0 12px"><b>Líder:</b> ______________________________ &nbsp;&nbsp; <b>Assinatura:</b> ______________________</p>
+    ${pre ? `<div class="printvis">${pre}</div>` : ''}
+    ${head ? `<table><thead><tr>${head.map(t).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${head.length}">Sem dados no período.</td></tr>`}</tbody>
+    ${foot ? `<tfoot><tr>${foot.map(c => `<th>${esc(c)}</th>`).join('')}</tr></tfoot>` : ''}</table>` : ''}`;
+  window.print();
+}
+
+/* ================= diálogos e avisos ================= */
+let toastTimer;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3800); }
+function openDlg(html, cls = '') { const d = $('#dlg'); d.className = cls; d.innerHTML = html; d.returnValue = ''; if (!d.open) d.showModal(); return d; }
+function closeDlg() { const d = $('#dlg'); if (d.open) d.close(); }
+function confirmDlg({ title, body = '', ok = 'Confirmar', danger = false, typed = null, cancel = true }) {
+  return new Promise(res => {
+    const d = openDlg(`<form method="dialog" class="dlgbox"><h2>${esc(title)}</h2><div>${body}</div>
+      ${typed ? `<label class="fld">Digite <b>${esc(typed)}</b> para confirmar<input id="cf-typed" autocomplete="off"></label>` : ''}
+      <div class="dlgact">${cancel ? '<button value="cancel" class="btn">Cancelar</button>' : ''}
+      <button value="ok" id="cf-ok" class="btn ${danger ? 'danger' : 'primary'}" ${typed ? 'disabled' : ''}>${esc(ok)}</button></div></form>`);
+    if (typed) $('#cf-typed', d).addEventListener('input', e => { $('#cf-ok', d).disabled = e.target.value.trim().toUpperCase() !== typed; });
+    d.addEventListener('close', () => res(d.returnValue === 'ok'), { once: true });
+  });
+}
+
+/* ================= login, primeiro acesso e dados iniciais ================= */
+function makeUser({ nome, usuario, senha, perfil, sectorId = null, demo = false }) {
+  const salt = uid();
+  return { id: uid(), nome: nome.trim(), usuario: usuario.trim(), salt, hash: hashPwd(senha, salt), perfil, sectorId, demo, createdAt: new Date().toISOString() };
+}
+function renderLogin() {
+  $('#app').innerHTML = `<div class="loginwrap"><form id="fLogin" class="logincard" autocomplete="on">
+    <div class="lhead"><span class="ltheme">${themeBtn()}</span>
+      <div class="leyebrow">${MODE === 'demo' ? 'Modo demonstração' : 'Acesso restrito'}</div>
+      <h1 class="ltitle">Controle de Horas Extras</h1>
+      <p class="lsub">Acesse com suas credenciais</p></div>
+    <div class="lbody">
+      <label class="fld">Usuário<input name="usuario" placeholder="seu.usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></label>
+      <label class="fld">Senha<span class="pwwrap"><input name="senha" type="password" placeholder="••••••••" autocomplete="current-password" required>${ic('lock')}</span></label>
+      <div id="loginErr" class="err" role="alert"></div>
+      <button class="btn primary block" type="submit">Entrar</button>
+      <label class="linkbtn mini" style="text-align:center">Líder: importar configuração enviada pelo RH<input type="file" id="impCfgLogin" accept=".json,application/json" hidden></label>
+    </div></form></div>`;
+}
+async function submitLogin(f) {
+  const v = Object.fromEntries(new FormData(f)); const err = m => { $('#loginErr').textContent = m; };
+  const u = S.users.find(x => x.usuario.toLowerCase() === v.usuario.trim().toLowerCase());
+  if (!u || u.hash !== hashPwd(v.senha, u.salt)) return err('Usuário ou senha incorretos.');
+  S.me = u;
+  try { sessionStorage.setItem('he_uid', S.me.id); } catch (e) {}
+  S.view = 'dashboard'; render();
+}
+/* RH padrão: no Node este login virá do .env. Troque a senha em Configurações RH → Usuários. */
+const DEFAULT_RH = { nome: 'RH', usuario: 'rhblue', senha: 'demo123' };
+async function ensureDefaultRH() {
+  // Cria o RH padrão uma única vez (também em navegadores que já tinham dados de versões anteriores).
+  if (!S.settings.rhSeeded) {
+    if (!S.users.some(u => u.usuario.toLowerCase() === DEFAULT_RH.usuario)) { await DB.put('users', makeUser({ ...DEFAULT_RH, perfil: 'rh' })); await reload('users'); }
+    if (!S.reasons.length && !S.snacks.length) await seedBase();
+    S.settings.rhSeeded = true; await saveSettings();
+  }
+  if (!S.settings.snackOrdFix) { // ordem da ficha: Lanche, Marmita, Pão com Presunto (a quantidade do pão varia)
+    const want = ['lanche', 'marmita', 'pao com presunto'], f = want.map(n => S.snacks.find(o => norm(o.nome) === n));
+    if (f.every(Boolean)) { f.forEach((o, i) => { o.ord = i + 1; }); await DB.putMany('snacks', f); await reload('snacks'); }
+    S.settings.snackOrdFix = true; await saveSettings();
+  }
+  if (MODE === 'demo' && !S.settings.demoSeeded) { await seedDemo(); S.settings.demoSeeded = true; await saveSettings(); }
+}
+async function setMode(m) { try { localStorage.setItem('he_mode', m); } catch (e) {} try { sessionStorage.removeItem('he_uid'); } catch (e) {} location.reload(); }
+function logout() { try { sessionStorage.removeItem('he_uid'); } catch (e) {} S.me = null; render(); }
+
+async function seedBase() { // padrões vindos da v3: motivos, opções de lanche e regras de concessão
+  const reasons = ['1. Quebra de Máquina (Manutenção corretiva/imprevistos técnicos)', '2. Retrabalho (Correção de peças reprovadas pela qualidade)', '3. Compensação BH (Banco de horas / trocas de dias e feriados)', '4. Cobertura de Falta (Absenteísmo ou atraso do próximo turno)', '5. Atraso de Fluxo (Falta de matéria-prima, gargalo em outra máquina ou atraso na carga)', '6. Outro'].map(nome => ({ id: uid(), nome }));
+  const snacks = [{ id: uid(), nome: 'Lanche', preco: 20, ord: 1 }, { id: uid(), nome: 'Marmita', preco: 25, ord: 2 }, { id: uid(), nome: 'Pão com Presunto', preco: 2, ord: 3 }];
+  const rules = [{ id: uid(), tipoDia: 'semana', minHoras: 2, horaLimite: '', sugestao: snacks[0].id, qtdPadrao: 1, opcoesPermitidas: [snacks[0].id], ativo: true },
+    { id: uid(), tipoDia: 'fds', minHoras: '', horaLimite: '12:00', sugestao: '', qtdPadrao: 1, opcoesPermitidas: [snacks[1].id, snacks[2].id], ativo: true }];
+  await DB.putMany('reasons', reasons); await DB.putMany('snacks', snacks); await DB.putMany('rules', rules);
+  await DB.put('settings', { key: 'cfg', ...structuredClone(DEFAULTS) });
+  for (const s of ['reasons', 'snacks', 'rules', 'settings']) await reload(s);
+}
+async function seedDemo() {
+  const now = new Date().toISOString();
+  const sectors = ['Produção', 'Logística', 'Manutenção', 'Administrativo'].map(nome => ({ id: uid(), nome }));
+  const names = { 'Produção': ['Carlos Mendes', 'Fernanda Lima', 'João Batista', 'Aline Souza', 'Rafael Costa'], 'Logística': ['Marcos Oliveira', 'Patrícia Alves', 'Diego Santos', 'Luciana Rocha'], 'Manutenção': ['Roberto Silva', 'Eduardo Pires', 'Tiago Martins'], 'Administrativo': ['Camila Ferreira', 'Bruno Araújo', 'Juliana Nunes'] };
+  const emps = []; sectors.forEach(s => names[s.nome].forEach(nome => emps.push({ id: uid(), nome, sectorId: s.id, ativo: true })));
+  const leaders = [makeUser({ nome: 'Líder Produção', usuario: 'lider.producao', senha: 'demo123', perfil: 'lider', sectorId: sectors[0].id, demo: true }), makeUser({ nome: 'Líder Logística', usuario: 'lider.logistica', senha: 'demo123', perfil: 'lider', sectorId: sectors[1].id, demo: true })];
+  await DB.putMany('sectors', sectors); await DB.putMany('employees', emps); await DB.putMany('users', leaders);
+  for (const s of ['sectors', 'employees', 'users']) await reload(s);
+  const byS = [leaders[0].nome, leaders[1].nome, (S.me ? S.me.nome : 'RH'), (S.me ? S.me.nome : 'RH')];
+  let seed = 7; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  const reasons = S.reasons.filter(r => !/outro/i.test(r.nome)); const entries = []; const t = new Date(); const from = new Date(t.getFullYear(), t.getMonth() - 1, 1);
+  for (let d = new Date(from); d <= t; d.setDate(d.getDate() + 1)) {
+    if (d.getDay() === 0) continue;
+    const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, age = (t - d) / 864e5, sat = d.getDay() === 6;
+    sectors.forEach((sc, si) => {
+      if (rnd() > (sat ? 0.15 : 0.38)) return;
+      const picked = emps.filter(e => e.sectorId === sc.id).sort(() => rnd() - 0.5).slice(0, 1 + Math.floor(rnd() * 3));
+      const start = sat ? '08:00' : (rnd() < 0.5 ? '17:30' : '18:00'), dur = sat ? 240 + 30 * Math.floor(rnd() * 3) : 60 + 30 * Math.floor(rnd() * 5);
+      const e2 = (toMin(start) + dur) % 1440, end = `${pad(Math.floor(e2 / 60))}:${pad(e2 % 60)}`, reason = reasons[Math.floor(rnd() * reasons.length)];
+      const status = age > 7 ? 'enviado' : (rnd() < 0.7 ? 'rascunho' : 'enviado');
+      const r = regraAplicavel(iso, start, end, dur), oid = r ? (r.sugestao || (r.opcoesPermitidas || [])[0] || '') : '';
+      picked.forEach(e => entries.push({ id: uid(), date: iso, sectorId: sc.id, empId: e.id, apoio: false, reasonId: reason.id, reasonOutro: '', start, end, hasInt: false, intIni: '', intFim: '', bruta: dur, inter: 0, min: dur,
+        opcaoId: oid, qtd: oid ? (r.qtdPadrao || 1) : 0, preco: oid ? S.om.get(oid).preco : 0, obs: '', trocado: false, status, by: byS[si], createdAt: now, updatedAt: now }));
+    });
+  }
+  await DB.putMany('entries', entries); await reload('entries');
+  S.settings.empresa = 'Empresa Exemplo'; await saveSettings();
+}
+
+/* ================= estrutura geral ================= */
+function render() { if (!S.me) return renderLogin(); renderShell(); }
+function renderShell() {
+  const tabs = [['dashboard', 'Painel'], ['entries', 'Lançamentos'], ['reports', 'Relatórios'], ['analysis', 'Análises']]; if (isRH()) tabs.push(['settings', 'Configurações RH']);
+  $('#app').innerHTML = `${MODE === 'demo' ? '<div class="demobar" role="status">MODO DEMONSTRAÇÃO · dados simulados, separados dos reais</div>' : ''}<header class="top"><div class="wrap top-in">
+    <div class="brand"><span class="mark" aria-hidden="true">h</span><span>Controle de Horas Extras<small>${esc(S.settings.empresa || 'Controle interno')}</small></span></div>
+    <nav class="tabs" aria-label="Seções">${tabs.map(([k, l]) => `<button class="tab" data-act="nav" data-v="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</button>`).join('')}</nav>
+    <div class="who"><span><b>${esc(S.me.nome)}</b><small>${PERFIL[S.me.perfil]}${S.me.sectorId ? ' · ' + esc(sectorName(S.me.sectorId)) : ''}</small></span>${themeBtn()}<button class="btn sm" data-act="logout">${ic('out')}<span>Sair</span></button></div>
+  </div></header><main class="wrap" id="view"></main>
+  ${canWrite() ? `<button class="btn primary fab" data-act="new-entry">${ic('plus')}<span>Novo lançamento</span></button>` : ''}`;
+  renderView();
+}
+function renderView() { ({ dashboard: vDash, entries: vEntries, reports: vReports, analysis: vAnalysis, settings: vSettings })[S.view](); }
+const sectorOptions = () => S.sectors.slice().sort(byName);
+function filterBar({ status = false, search = false } = {}) {
+  return `<div class="filters panel">
+    <label class="fld">Mês<input type="month" data-f="month" value="${S.f.month}" ${S.f.all ? 'disabled' : ''}></label>
+    <label class="chk"><input type="checkbox" data-f="all" ${S.f.all ? 'checked' : ''}> Todo o período</label>
+    ${scopeSector() ? '' : `<label class="fld">Setor<select data-f="sectorId"><option value="">Todos</option>${sectorOptions().map(d => `<option value="${d.id}" ${S.f.sectorId === d.id ? 'selected' : ''}>${esc(d.nome)}</option>`).join('')}</select></label>`}
+    ${status ? `<label class="fld">Situação<select data-f="status"><option value="">Todas</option><option value="rascunho" ${S.f.status === 'rascunho' ? 'selected' : ''}>Rascunho</option><option value="enviado" ${S.f.status === 'enviado' ? 'selected' : ''}>Enviado ao RH</option></select></label>` : ''}
+    ${search ? `<label class="fld grow">Buscar<input type="search" data-f="q" placeholder="Nome, motivo ou observação" value="${esc(S.f.q)}"></label>` : ''}
+  </div>`;
+}
+const scopeLabel = () => scopeSector() ? sectorName(scopeSector()) : (S.f.sectorId ? sectorName(S.f.sectorId) : 'Todos os setores');
+
+/* ================= gráficos (SVG próprio, sem biblioteca) ================= */
+const fmtN = v => String(+(+v).toFixed(1)).replace('.', ',');
+const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const sc = i => `var(--c${i % 6 + 1})`;
+const secColor = id => { const i = sectorOptions().findIndex(s => s.id === id); return sc(i < 0 ? 5 : i); };
+function niceTop(max) { const mag = Math.pow(10, Math.floor(Math.log10(max))), n = max / mag; return ([1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(s => n <= s + 1e-9) || 10) * mag; }
+function barList(items, { color = 'var(--accent)', fmt = v => v } = {}) {
+  const m = Math.max(...items.map(i => i.v), 1);
+  return `<ul class="bars">${items.map(i => `<li><span class="bl" title="${esc(i.l)}">${esc(i.l)}${i.badge || ''}</span><span class="bt"><i style="width:${(i.v / m * 100).toFixed(1)}%;background:${color}"></i></span><span class="bv">${fmt(i.v)}</span></li>`).join('')}</ul>`;
+}
+function stackList(rows, series, fmt) {
+  const max = Math.max(...rows.map(r => sum(r.v, x => x)), 1);
+  const legend = `<ul class="legend inline">${series.map(s => `<li><i style="background:${s.color}"></i><span class="t">${esc(s.name)}</span></li>`).join('')}</ul>`;
+  return legend + `<ul class="stack">${rows.map(r => { const tot = sum(r.v, x => x); return `<li class="srow"><span class="bl2" title="${esc(r.l)}">${esc(r.l)}</span><span class="st">${r.v.map((v, j) => v > 0 ? `<i style="width:${(v / max * 100).toFixed(2)}%;background:${series[j].color}" title="${esc(series[j].name)}: ${fmt(v)}"></i>` : '').join('')}</span><span class="bv">${fmt(tot)}</span></li>`; }).join('')}</ul>`;
+}
+function xLabels(labels, L, iw, y, n, centered = true) {
+  const maxLen = Math.max(...labels.map(l => l.length), 1), step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(iw / (maxLen * 6 + 10)))));
+  const slot = iw / (centered ? n : Math.max(1, n - 1));
+  return labels.map((l, i) => i % step === 0 ? `<text x="${(L + (centered ? i * slot + slot / 2 : (n === 1 ? iw / 2 : i * slot))).toFixed(1)}" y="${y}" text-anchor="middle" class="ax">${esc(l)}</text>` : '').join('');
+}
+function colChart(series, aria) {
+  const W = 480, H = 205, L = 42, R = 8, T = 24, B = 26, iw = W - L - R, ih = H - T - B, n = series.length;
+  const top = niceTop(Math.max(...series.map(s => s.v), 0.01)), y = v => T + ih - (v / top) * ih, bw = iw / n, w = Math.max(3, bw * 0.62);
+  const grid = [0, .5, 1].map(f => { const v = top * f; return `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="gl"/><text x="${L - 5}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" class="ax">${fmtN(v)}h</text>`; }).join('');
+  let last = -1e9;
+  const bars = series.map((s, i) => {
+    if (!(s.v > 0)) return ''; const cx = L + i * bw + bw / 2, t = fmtN(s.v), lw = t.length * 4.6;
+    const lab = (cx - lw / 2 > last + 1) ? (last = cx + lw / 2, `<text x="${cx.toFixed(1)}" y="${(y(s.v) - 4).toFixed(1)}" text-anchor="middle" class="vl">${t}</text>`) : '';
+    return `<rect x="${(cx - w / 2).toFixed(1)}" y="${y(s.v).toFixed(1)}" width="${w.toFixed(1)}" height="${((s.v / top) * ih).toFixed(1)}" rx="2" class="bar"><title>${esc(s.label)}: ${fmtH(s.v * 60)}</title></rect>${lab}`;
+  }).join('');
+  return `<svg class="col" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}"><text x="${L}" y="12" class="ax">horas</text>${grid}${bars}${xLabels(series.map(s => s.label), L, iw, H - 8, n)}</svg>`;
+}
+function lineChart(labels, lines, aria) {
+  const W = 480, H = 215, L = 42, R = 16, T = 24, B = 26, iw = W - L - R - 8, ih = H - T - B, n = labels.length;
+  const top = niceTop(Math.max(...lines.flatMap(l => l.vals), 0.01)), y = v => T + ih - (v / top) * ih, x = i => L + 8 + (n === 1 ? iw / 2 : i * iw / (n - 1));
+  const grid = [0, .5, 1].map(f => { const v = top * f; return `<line x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" class="gl"/><text x="${L - 5}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end" class="ax">${fmtN(v)}h</text>`; }).join('');
+  const withLabels = lines.length <= 2 && n <= 8;
+  const paths = lines.map(l => `<polyline class="ln" stroke="${l.color}" points="${l.vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>` +
+    l.vals.map((v, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="3.5" fill="${l.color}"><title>${esc(l.name)} · ${esc(labels[i])}: ${fmtH(v * 60)}</title></circle>` + (withLabels && v > 0 ? `<text x="${x(i).toFixed(1)}" y="${(y(v) - 8).toFixed(1)}" text-anchor="middle" class="vl">${fmtN(v)}</text>` : '')).join('')).join('');
+  const xl = (() => { const maxLen = Math.max(...labels.map(s => s.length), 1), step = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(iw / (maxLen * 6 + 10))))); return labels.map((l, i) => i % step === 0 ? `<text x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="ax">${esc(l)}</text>` : '').join(''); })();
+  const legend = `<ul class="legend inline" style="margin:8px 0 0">${lines.map(l => `<li><i style="background:${l.color}"></i><span class="t">${esc(l.name)} · ${fmtH(l.vals[l.vals.length - 1] * 60)} no último mês</span></li>`).join('')}</ul>`;
+  return `<svg class="col" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}"><text x="${L}" y="12" class="ax">horas</text>${grid}${paths}${xl}</svg>${legend}`;
+}
+function donut(items, total, fmt, center) {
+  let cum = 0;
+  const segs = items.map((it, i) => { const p = it.v / total * 100; const s = `<circle r="15.9155" cx="21" cy="21" fill="none" stroke="var(--c${i % 6 + 1})" stroke-width="6" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${(25 - cum).toFixed(3)}"><title>${esc(it.l)}: ${fmt(it.v)}</title></circle>`; cum += p; return s; }).join('');
+  const svg = `<svg class="donut" viewBox="0 0 42 42" role="img" aria-label="${esc(center)}"><circle r="15.9155" cx="21" cy="21" fill="none" stroke="var(--surface2)" stroke-width="6"/>${segs}<text x="21" y="21.5" text-anchor="middle" dominant-baseline="middle" class="dn">${fmt(total)}</text></svg>`;
+  const leg = `<ul class="legend">${items.map((it, i) => `<li><i style="background:var(--c${i % 6 + 1})"></i><span class="t" title="${esc(it.l)}">${esc(it.l)}</span><b>${fmt(it.v)} · ${Math.round(it.v / total * 100)}%</b></li>`).join('')}</ul>`;
+  return `<div class="donutbox">${svg}${leg}</div>`;
+}
+
+/* ================= painel ================= */
+function tetoPanel() {
+  const t = teto(); const head = `<div class="toolbar" style="justify-content:space-between"><h2 style="margin:0">Teto mensal de horas</h2>${isRH() ? `<button class="btn sm" data-act="limit-open">${ic('edit')}Editar teto</button>` : ''}</div>`;
+  if (!t) return isRH() ? `<section data-sec="teto" class="panel">${head}<p class="muted">Controle desligado. Use “Editar teto” para ligar e definir o limite por colaborador.</p></section>` : '';
+  const alert = t.rows.filter(r => r.st !== 'ok').slice(0, 8), tag = { over: ['Acima', 'warn'], full: ['No limite', 'warn'], near: ['Perto', 'warn'] };
+  const body = alert.length ? `<ul class="bars">${alert.map(r => `<li><span class="bl" title="${esc(r.l)}">${esc(r.l)}</span><span class="bt"><i style="width:${Math.min(100, r.pct).toFixed(0)}%;background:${r.st === 'near' ? 'var(--warm)' : 'var(--warn)'}"></i></span><b>${fmtH(r.v)} · ${Math.round(r.pct)}%</b></li>`).join('')}</ul>` : '<div class="empty">Ninguém perto do teto neste mês.</div>';
+  return `<section data-sec="teto" class="panel">${head}<p class="muted small">Limite de ${t.L}h por pessoa em ${esc(monthLabel(t.ym))}. ${t.over.length ? `<b>${t.over.length}</b> no limite ou acima` : 'Ninguém acima'}${t.near.length ? `, <b>${t.near.length}</b> a partir de ${t.A}%` : ''}.</p>${body}</section>`;
+}
+function vDash() {
+  const list = filtered(), money$ = showMoney();
+  const totalMin = sum(list, e => e.min), snacks = sum(list, e => e.opcaoId ? e.qtd : 0), totalCost = sum(list, cost), people = new Set(list.map(e => e.empId)).size;
+  const rasc = list.filter(e => e.status === 'rascunho').length;
+  const byReason = [...groupBy(list, e => reasonText(e.reasonId))].map(([l, a]) => ({ l, v: sum(a, e => e.min), a })).sort((a, b) => b.v - a.v);
+  const kpi = (l, n, s, c = '', txt = false) => `<div class="kpi ${c}"><div class="kl">${l}</div><div class="kn ${txt ? 'txt' : ''}" ${txt ? `title="${esc(n)}"` : ''}>${txt ? esc(n) : n}</div><div class="ks">${s || ''}</div></div>`;
+  let body;
+  if (!list.length) body = `<div class="panel empty"><p><b>Nenhum lançamento em ${esc(periodLabel().toLowerCase())}.</b></p>${canWrite() ? '<p>Use “Novo lançamento” para registrar a primeira hora extra.</p>' : ''}</div>`;
+  else {
+    let series;
+    if (S.f.all) { const g = [...groupBy(list, e => e.date.slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0])); series = g.map(([k, a]) => ({ label: MES3[+k.slice(5) - 1] + '/' + k.slice(2, 4), v: sum(a, e => e.min) / 60 })); }
+    else { const [y, m] = S.f.month.split('-').map(Number), n = new Date(y, m, 0).getDate(), g = groupBy(list, e => +e.date.slice(8)); series = Array.from({ length: n }, (_, i) => ({ label: String(i + 1), v: sum(g.get(i + 1) || [], e => e.min) / 60 })); }
+    const secItems = [...groupBy(list, e => e.sectorId)].map(([id, a]) => ({ l: sectorName(id), v: sum(a, e => e.min) })).sort((a, b) => b.v - a.v).slice(0, 10);
+    const snackItems = [...groupBy(list.filter(e => e.opcaoId), e => e.opcaoId)].map(([id, a]) => ({ l: snackName(id), v: sum(a, e => e.qtd) })).sort((a, b) => b.v - a.v).slice(0, 6);
+    const lim = limMes();
+    const people8 = [...groupBy(list, e => e.empId)].map(([id, a]) => { const v = sum(a, e => e.min); return { l: empName(id), v, badge: (!S.f.all && lim && v > lim * 60) ? `<span class="badge">acima de ${lim}h</span>` : '' }; }).sort((a, b) => b.v - a.v).slice(0, 8);
+    // evolução mensal por setor (últimos 12 meses com dados, ignora o filtro de mês)
+    const allScope = S.entries.filter(e => (!scopeSector() || e.sectorId === scopeSector()) && (scopeSector() || !S.f.sectorId || e.sectorId === S.f.sectorId));
+    const months = [...new Set(allScope.map(e => e.date.slice(0, 7)))].sort().slice(-12);
+    const secTot = [...groupBy(allScope, e => e.sectorId)].map(([id, a]) => [id, sum(a, e => e.min)]).sort((a, b) => b[1] - a[1]), topSec = secTot.slice(0, 6).map(x => x[0]);
+    const lines = topSec.map(id => ({ name: sectorName(id), color: secColor(id), vals: months.map(mo => sum(allScope.filter(e => e.sectorId === id && e.date.slice(0, 7) === mo), e => e.min) / 60) }));
+    if (secTot.length > 6) lines.push({ name: 'Outros setores', color: 'var(--c6)', vals: months.map(mo => sum(allScope.filter(e => !topSec.includes(e.sectorId) && e.date.slice(0, 7) === mo), e => e.min) / 60) });
+    // gargalos: motivos × setor
+    const secs = [...new Set(list.map(e => e.sectorId))].sort((a, b) => sectorName(a).localeCompare(sectorName(b), 'pt-BR')), sSeries = secs.slice(0, 6).map(id => ({ id, name: sectorName(id), color: secColor(id) }));
+    if (secs.length > 6) sSeries.push({ id: null, name: 'Outros setores', color: 'var(--c6)' });
+    const gargalos = byReason.slice(0, 8).map(r => ({ l: r.l, v: sSeries.map(s => sum(r.a.filter(e => s.id ? e.sectorId === s.id : !sSeries.some(x => x.id === e.sectorId)), e => e.min) / 60) }));
+    body = `<div class="grid2">
+      <section data-sec="dia" class="panel"><h2>${S.f.all ? 'Horas líquidas por mês' : 'Horas líquidas por dia'}</h2>${colChart(series, S.f.all ? 'Horas por mês' : 'Horas por dia')}</section>
+      <section class="panel"><h2>Evolução mensal por setor</h2>${lineChart(months.map(m => MES3[+m.slice(5) - 1] + '/' + m.slice(2, 4)), lines, 'Evolução mensal de horas por setor')}</section>
+      ${scopeSector() ? '' : `<section data-sec="setor" class="panel"><h2>Horas líquidas por setor</h2>${barList(secItems, { fmt: fmtH })}</section>`}
+      <section data-sec="lanches" class="panel"><h2>Distribuição de lanches (quantidade)</h2>${snackItems.length ? donut(snackItems, sum(snackItems, x => x.v), v => String(v), 'Lanches por opção') : '<div class="empty">Nenhum lanche no período.</div>'}</section>
+      <section data-sec="gargalos" class="panel" style="grid-column:1/-1"><h2>Gargalos: motivos apontados por setor (horas)</h2>${stackList(gargalos, sSeries, v => fmtH(v * 60))}</section>
+      ${tetoPanel()}
+      <section data-sec="pessoas" class="panel"><h2>Quem mais fez hora extra</h2>${barList(people8, { fmt: fmtH })}</section>
+    </div>`;
+  }
+  S.dashPrint = { kpis: '', body };
+  $('#view').innerHTML = `<div class="pagehead"><h1>Painel</h1><span class="muted">${esc(periodLabel())} · ${esc(scopeLabel())}</span><span class="sp"></span><span class="noprint toolbar">${ibtn('narr-start', 'speaker', 'Ouvir resumo')}${ibtn('print-dash', 'print', 'PDF')}</span></div>
+    ${filterBar()}
+    <div class="kpis">
+      ${kpi('Horas líquidas', fmtH(totalMin), `${list.length} lançamentos · ${people} colaboradores`)}
+      ${kpi('Lanches', snacks, money$ ? `${money(totalCost)} no período` : 'unidades no período', 'warm')}
+      ${kpi('Rascunhos', rasc, rasc ? '<button class="btn sm" data-act="goto-draft">Ver rascunhos</button>' : 'nada pendente de envio', rasc ? 'attn' : '')}
+      ${kpi('Maior gargalo', byReason[0] ? byReason[0].l : '—', byReason[0] ? fmtH(byReason[0].v) : '', '', true)}
+    </div>${body}`;
+}
+
+/* ================= lançamentos ================= */
+const reasonShort = e => reasonShow(e).replace(/\s*\([^)]*\)\s*/, ' ').replace(/\s+—/, ' —').trim();
+const statusPill = s => `<span class="pill p-${s}">${s === 'enviado' ? 'Enviado RH' : 'Rascunho'}</span>`;
+function entryRows() {
+  const q = norm(S.f.q);
+  return filtered(e => (!S.f.status || e.status === S.f.status) && (!q || norm([empName(e.empId), reasonShow(e), e.obs, sectorName(e.sectorId)].join(' ')).includes(q)))
+    .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+function entriesTable() {
+  const rows = entryRows(), LIM = 300, m$ = showMoney();
+  if (!rows.length) return '<div class="empty">Nenhum lançamento com esses filtros.</div>';
+  const tr = e => {
+    const a = [];
+    if (canEdit(e)) a.push(ibtn('edit', 'edit', 'Editar', { id: e.id, only: true }) + ibtn('del', 'trash', 'Excluir', { id: e.id, only: true, cls: 'warnbtn' }));
+    else if (e.status === 'enviado' && S.me.perfil === 'lider') a.push(`<span class="muted" title="Já enviado ao RH">${ic('lock')}</span>`);
+    if (isRH() && e.status === 'enviado') a.push(`${ibtn('reopen', 'undo', 'Reabrir (volta para rascunho)', { id: e.id, only: true })}`);
+    return `<tr><td data-label="Enviar">${canWrite() && e.status === 'rascunho' && canEdit(e) ? `<input type="checkbox" class="chk-env" data-id="${e.id}" aria-label="Selecionar para enviar">` : ''}</td>
+      <td data-label="Data">${fmtDate(e.date)}</td><td data-label="Colaborador">${esc(empName(e.empId))}${e.apoio ? ' <span class="tag" title="Apoio de outro setor">apoio</span>' : ''}</td><td data-label="Setor">${esc(sectorName(e.sectorId))}</td>
+      <td data-label="Motivo" title="${esc(reasonShow(e))}">${esc(reasonShort(e))}<small>${esc(e.obs || '')}</small></td><td data-label="Horário">${e.start}–${e.end}${toMin(e.end) <= toMin(e.start) ? ' <span class="tag">+1</span>' : ''}</td>
+      <td data-label="Horas líq." class="num">${fmtH(e.min)}</td><td data-label="Lanche">${e.opcaoId ? esc(snackName(e.opcaoId)) + (e.trocado ? ' <span class="tag t-warn" title="Trocado fora da sugestão da regra">trocado</span>' : '') : '—'}</td>
+      <td data-label="Qtd" class="num">${e.opcaoId ? e.qtd : '—'}</td>${m$ ? `<td data-label="Custo" class="num">${e.opcaoId ? money(cost(e)) : '—'}</td>` : ''}
+      <td data-label="Situação">${statusPill(e.status)}</td><td class="act">${a.join('')}</td></tr>`;
+  };
+  return `<div class="tblwrap"><table class="tbl"><thead><tr><th><input type="checkbox" id="chkAll" aria-label="Selecionar todos"></th><th>Data</th><th>Colaborador</th><th>Setor</th><th>Motivo e observação</th><th>Horário</th><th class="num">Horas líq.</th><th>Lanche</th><th class="num">Qtd</th>${m$ ? '<th class="num">Custo</th>' : ''}<th>Situação</th><th></th></tr></thead>
+    <tbody>${rows.slice(0, LIM).map(tr).join('')}</tbody></table></div>
+    <p class="muted small">${rows.length > LIM ? `Mostrando ${LIM} de ${rows.length}. Refine os filtros ou exporte.` : `${rows.length} lançamentos · ${fmtH(sum(rows, e => e.min))}${m$ ? ' · ' + money(sum(rows, cost)) + ' em lanches' : ''}`}</p>`;
+}
+function refreshEntriesTable() { const t = $('#tbl'); if (t) t.innerHTML = entriesTable(); }
+function vEntries() {
+  $('#view').innerHTML = `<div class="pagehead"><h1>Lançamentos</h1><span class="muted">${esc(periodLabel())} · ${esc(scopeLabel())}</span></div>
+    ${filterBar({ status: true, search: true })}
+    <div class="toolbar noprint">${canWrite() ? `<button class="btn primary" data-act="new-entry">${ic('plus')}Novo lançamento</button><button class="btn okbtn" data-act="send-rh">${ic('send')}Enviar selecionados ao RH</button>` : ''}
+      <span class="sp"></span><button class="btn" data-act="export-xlsx">${ic('sheet')}.xlsx</button><button class="btn" data-act="export-entries">${ic('down')}CSV</button><button class="btn" data-act="print-entries">${ic('print')}PDF</button>
+      <button class="btn" data-act="blank-open" title="Ficha de papel numerada, para usar quando o sistema estiver fora do ar">${ic('file')}Ficha manual</button></div>
+    <section class="panel" id="tbl">${entriesTable()}</section>`;
+}
+const summaryCard = (l, n, s = '', c = '') => `<div class="kpi ${c}"><div class="kl">${l}</div><div class="kn">${n}</div><div class="ks">${s}</div></div>`;
+function summaryCards(list) {
+  const m$ = showMoney(), snacks = sum(list, e => e.opcaoId ? e.qtd : 0);
+  return `<div class="rcards">${summaryCard('Horas líquidas', fmtH(sum(list, e => e.min)), `${list.length} lançamentos`)}${summaryCard('Colaboradores', new Set(list.map(e => e.empId)).size, 'com hora extra')}
+    ${summaryCard('Lanches', snacks, m$ ? money(sum(list, cost)) : 'unidades', 'warm')}${summaryCard('Rascunhos', list.filter(e => e.status === 'rascunho').length, 'ainda não enviados ao RH')}</div>`;
+}
+function printEntries() {
+  const rows = entryRows(), m$ = showMoney();
+  printReport({ title: 'Controle de Horas Extras — por setor', sub: `${periodLabel()} · ${scopeLabel()}`, pre: summaryCards(rows),
+    head: ['Nº', 'Data', 'Colaborador', 'Setor', 'Motivo', 'Início', 'Fim', 'Horas líq.', 'Lanche', ...(m$ ? ['Custo'] : [])],
+    rows: rows.map((e, i) => [i + 1, fmtDate(e.date), empName(e.empId), sectorName(e.sectorId), reasonShow(e), e.start, e.end, fmtH(e.min), e.opcaoId ? `${snackName(e.opcaoId)} x${e.qtd}` : '—', ...(m$ ? [money(cost(e))] : [])]),
+    foot: ['', '', '', '', 'Total', '', '', fmtH(sum(rows, e => e.min)), String(sum(rows, e => e.opcaoId ? e.qtd : 0)), ...(m$ ? [money(sum(rows, cost))] : [])] });
+}
+
+/* ================= relatórios ================= */
+const REPORTS = { colab: 'Horas por colaborador', setor: 'Horas por setor', motivo: 'Horas por motivo', dia: 'Resumo por dia', lanche: 'Lanches por opção' };
+function buildReport(kind) {
+  const list = filtered(), m$ = showMoney(), total = sum(list, e => e.min), qty = a => sum(a, e => e.opcaoId ? e.qtd : 0);
+  let r;
+  if (kind === 'colab') r = { head: ['Colaborador', 'Setor', 'Lançamentos', 'Horas líquidas', 'Lanches'], types: ['t', 't', 'n', 'h', 'n'], rows: [...groupBy(list, e => e.empId)].map(([id, a]) => [empName(id), sectorName(S.em.get(id)?.sectorId || a[0].sectorId), a.length, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => y[3] - x[3]) };
+  else if (kind === 'setor') r = { head: ['Setor', 'Colaboradores', 'Lançamentos', 'Horas líquidas', 'Lanches'], types: ['t', 'x', 'n', 'h', 'n'], rows: [...groupBy(list, e => e.sectorId)].map(([id, a]) => [sectorName(id), new Set(a.map(e => e.empId)).size, a.length, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => y[3] - x[3]) };
+  else if (kind === 'motivo') r = { head: ['Motivo', 'Lançamentos', 'Horas líquidas', '% das horas', 'Lanches'], types: ['t', 'n', 'h', 'p', 'n'], rows: [...groupBy(list, e => reasonText(e.reasonId))].map(([l, a]) => [l, a.length, sum(a, e => e.min), total ? sum(a, e => e.min) / total * 100 : 0, qty(a), sum(a, cost)]).sort((x, y) => y[2] - x[2]) };
+  else if (kind === 'dia') r = { head: ['Data', 'Lançamentos', 'Pessoas no dia', 'Horas líquidas', 'Lanches'], types: ['d', 'n', 'x', 'h', 'n'], rows: [...groupBy(list, e => e.date)].map(([d, a]) => [d, a.length, new Set(a.map(e => e.empId)).size, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => x[0].localeCompare(y[0])) };
+  else r = { head: ['Opção de lanche', 'Quantidade', 'Lançamentos'], types: ['t', 'n', 'n'], rows: [...groupBy(list.filter(e => e.opcaoId), e => e.opcaoId)].map(([id, a]) => [snackName(id), qty(a), a.length, sum(a, cost)]).sort((x, y) => y[1] - x[1]) };
+  if (m$) { r.head.push('Custo dos lanches'); r.types.push('m'); } else r.rows.forEach(x => x.pop());
+  return r;
+}
+const cellDisp = (v, t) => t === 'h' ? fmtH(v) : t === 'm' ? money(v) : t === 'p' ? v.toFixed(1).replace('.', ',') + '%' : t === 'd' ? fmtDate(v) : String(v);
+const cellCsv = (v, t) => t === 'h' ? (v / 60).toFixed(2).replace('.', ',') : t === 'm' ? num2(v) : t === 'p' ? v.toFixed(1).replace('.', ',') : v;
+const reportTotals = r => r.types.map((t, i) => i === 0 ? 'Total' : ['n', 'h', 'm', 'p'].includes(t) ? sum(r.rows, x => x[i]) : '');
+function vReports() {
+  const r = buildReport(S.rep), tot = reportTotals(r), right = t => ['n', 'x', 'h', 'm', 'p'].includes(t) ? 'num' : '';
+  $('#view').innerHTML = `<div class="pagehead"><h1>Relatórios</h1><span class="muted">${esc(periodLabel())} · ${esc(scopeLabel())}</span></div>
+    ${filterBar()}
+    <div class="toolbar noprint"><label class="fld">Relatório<select id="rep">${Object.entries(REPORTS).map(([k, l]) => `<option value="${k}" ${S.rep === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label><span class="sp"></span>
+      <button class="btn" data-act="export-report">${ic('down')}Exportar CSV</button><button class="btn" data-act="print-report">${ic('print')}PDF</button></div>
+    ${reportVisual(r)}
+    <section class="panel"><h2>${REPORTS[S.rep]} — ${esc(periodLabel())}</h2>${r.rows.length ? `<div class="tblwrap"><table class="tbl"><thead><tr>${r.head.map((h, i) => `<th class="${right(r.types[i])}">${h}</th>`).join('')}</tr></thead>
+      <tbody>${r.rows.map(x => `<tr>${r.head.map((h, i) => `<td data-label="${h}" class="${right(r.types[i])}">${esc(cellDisp(x[i], r.types[i]))}</td>`).join('')}</tr>`).join('')}</tbody>
+      <tfoot><tr>${tot.map((v, i) => `<td data-label="${r.head[i]}" class="${right(r.types[i])}">${v === '' ? '' : esc(cellDisp(v, r.types[i]))}</td>`).join('')}</tr></tfoot></table></div>` : '<div class="empty">Sem dados no período.</div>'}</section>`;
+}
+function reportVisual(r) {
+  if (!r.rows.length) return '';
+  const list = filtered(), m$ = showMoney(), totalMin = sum(list, e => e.min), snacks = sum(list, e => e.opcaoId ? e.qtd : 0), people = new Set(list.map(e => e.empId)).size;
+  const top = r.rows[0], card = (l, n, s, c = '', txt = false) => `<div class="kpi ${c}"><div class="kl">${l}</div><div class="kn ${txt ? 'txt' : ''}" ${txt ? `title="${esc(n)}"` : ''}>${esc(String(n))}</div><div class="ks">${s || ''}</div></div>`;
+  const hrsIdx = r.types.indexOf('h');
+  const valIdx = S.rep === 'lanche' ? 1 : hrsIdx, fmtV = S.rep === 'lanche' ? (v => String(v)) : fmtH;
+  const kids = [];
+  const lead = { colab: 'Quem mais fez', setor: 'Setor com mais horas', motivo: 'Principal motivo', dia: 'Dia mais pesado', lanche: 'Opção mais pedida' }[S.rep];
+  kids.push(card('Horas líquidas', fmtH(totalMin), `${list.length} lançamentos`));
+  kids.push(card(S.rep === 'lanche' ? 'Lanches' : 'Lanches', snacks, m$ ? money(sum(list, cost)) + ' no período' : 'unidades', 'warm'));
+  kids.push(card('Colaboradores', people, 'com hora extra'));
+  kids.push(card(lead, S.rep === 'dia' ? fmtDate(top[0]) : top[0], `${fmtV(top[valIdx])}${S.rep === 'motivo' ? ' · ' + top[3].toFixed(0) + '%' : ''}`, 'attn', S.rep !== 'dia'));
+  let chart = '';
+  const topN = r.rows.slice(0, 10).map(x => ({ l: S.rep === 'dia' ? fmtDate(x[0]) : String(x[0]), v: x[valIdx] }));
+  if (S.rep === 'motivo' || S.rep === 'lanche') {
+    const items = r.rows.length > 6 ? [...r.rows.slice(0, 5).map(x => ({ l: x[0], v: x[valIdx] })), { l: 'Outros', v: sum(r.rows.slice(5), x => x[valIdx]) }] : r.rows.map(x => ({ l: x[0], v: x[valIdx] }));
+    chart = `<section class="panel"><h2>${S.rep === 'motivo' ? 'Participação de cada motivo nas horas' : 'Distribuição de lanches'}</h2>${donut(items.filter(i => i.v > 0), sum(items, i => i.v) || 1, fmtV, REPORTS[S.rep])}</section>`;
+  } else if (S.rep === 'dia') {
+    const pts = r.rows.map(x => ({ label: String(+x[0].slice(8)), v: x[valIdx] / 60 }));
+    chart = `<section class="panel"><h2>Horas por dia</h2>${colChart(pts, 'Horas por dia')}</section>`;
+  } else {
+    chart = `<section class="panel"><h2>${S.rep === 'colab' ? 'Colaboradores com mais horas' : 'Setores com mais horas'}${r.rows.length > 10 ? ' (10 primeiros)' : ''}</h2>${barList(topN, { fmt: fmtV })}</section>`;
+  }
+  return `<div class="sec2"><div class="rcards">${kids.join('')}</div>${chart}</div>`;
+}
+function exportReport() {
+  const r = buildReport(S.rep); if (!r.rows.length) return toast('Sem dados para exportar.');
+  const tot = reportTotals(r);
+  download(`relatorio-${S.rep}-${S.f.all ? 'todos' : S.f.month}.csv`, toCSV([r.head, ...r.rows.map(x => r.head.map((h, i) => cellCsv(x[i], r.types[i]))), tot.map((v, i) => v === '' ? '' : cellCsv(v, r.types[i]))]));
+}
+function printReportView() {
+  const r = buildReport(S.rep), tot = reportTotals(r);
+  printReport({ title: REPORTS[S.rep], sub: `${periodLabel()} · ${scopeLabel()}`, pre: reportVisual(r), head: r.head, rows: r.rows.map(x => r.head.map((h, i) => cellDisp(x[i], r.types[i]))), foot: tot.map((v, i) => v === '' ? '' : cellDisp(v, r.types[i])) });
+}
+
+/* ================= ficha manual em branco (contingência), numerada em sequência ================= */
+const BLANK_KEY = 'he_ficha_next';
+function openBlank() {
+  let next = 1; try { next = parseInt(localStorage.getItem(BLANK_KEY)) || 1; } catch (e) {}
+  const sc = scopeSector();
+  openDlg(`<form id="fBlank" class="dlgbox"><h2>Ficha manual numerada</h2>
+    <p class="muted">Ficha de papel para usar quando o sistema estiver fora do ar. Todos os setores recebem a mesma numeração; assim cada setor pode entregar o bloco ao RH uma vez por mês.</p>
+    <div class="two"><label class="fld">Começar no número<input name="from" inputmode="numeric" value="${next}"></label>
+      <label class="fld">Quantidade de linhas<input name="qty" inputmode="numeric" value="1000"></label></div>
+    <div class="two"><label class="fld">Linhas por folha<select name="per"><option>12</option><option selected>18</option><option>24</option></select></label>
+      <label class="fld">Setor (opcional)<input name="setor" maxlength="40" value="${esc(sc ? sectorName(sc) : '')}" placeholder="em branco para preencher à mão"></label></div>
+    <p class="mini" id="blankInfo"></p>
+    <div id="blankErr" class="err" role="alert"></div>
+    <div class="dlgact"><button type="button" class="btn" data-act="dlg-close">Cancelar</button><button type="submit" class="btn primary">${ic('print')}Gerar fichas</button></div></form>`);
+  blankInfo();
+}
+function blankInfo() {
+  const f = $('#fBlank'); if (!f) return; const from = parseInt(f.elements.from.value) || 1, qty = parseInt(f.elements.qty.value) || 0, per = +f.elements.per.value;
+  $('#blankInfo').textContent = qty > 0 ? `Vai gerar as linhas ${from} a ${from + qty - 1}, em ${Math.ceil(qty / per)} folhas. Para continuar depois, o próximo bloco começa no ${from + qty}.` : '';
+}
+function printBlankSheet(f) {
+  const from = Math.max(1, parseInt(f.elements.from.value) || 1), qty = parseInt(f.elements.qty.value) || 0, per = +f.elements.per.value, setor = f.elements.setor.value.trim();
+  if (qty < 1 || qty > 3000) return $('#blankErr').textContent = 'Informe de 1 a 3000 linhas.';
+  const short = r => r.nome.replace(/\s*\(.*$/, '').trim(), box = t => `<span style="white-space:nowrap">&#9744; ${esc(t)}</span>`;
+  const reasons = S.reasons.filter(r => !isOutro(r.id)), outros = S.reasons.filter(r => isOutro(r.id)), snacks = S.snacks, pages = Math.ceil(qty / per);
+  const reasonHTML = reasons.map(r => box(short(r))).join(' &nbsp; ') + (outros.length ? ' &nbsp; ' + outros.map(r => box(short(r))).join(' &nbsp; ') : '');
+  const legend = [...reasons, ...outros].map(r => esc(r.nome)).join(' &nbsp;|&nbsp; ');
+  let html = '';
+  for (let p = 0; p < pages; p++) {
+    const rows = Array.from({ length: Math.min(per, qty - p * per) }, (_, i) => from + p * per + i);
+    html += `<div class="sheet"><h3 style="margin:0 0 4px">Controle de Horas Extras &amp; Lanche: ficha manual (contingência)</h3>
+      <p style="margin:0 0 8px"><b>Setor:</b> ${setor ? esc(setor) : '____________________'} &nbsp; <b>Líder:</b> ______________________________ &nbsp; <b>Folha:</b> ${p + 1} de ${pages} &nbsp; <b>Período:</b> ____/____/______ a ____/____/______</p>
+      <table><thead><tr><th>Nº</th><th>Data</th><th>Nome completo (colaborador e líder)</th><th>Hora início (ex. 17:05)</th><th>Hora fim (ex. 19:00)</th><th>Opção de lanche</th><th>Motivo (marque) e justificativa</th><th>Funcionário de outro setor</th><th>Visto RH (rubrica e data)</th></tr></thead><tbody>
+      ${rows.map(n => `<tr style="height:30px"><td><b>${n}</b></td><td></td><td></td><td></td><td></td><td>${snacks.map(o => box(o.nome)).join('<br>')}<br><small>Qtd: ______</small></td><td>${reasonHTML}<br><small>Justifique (se 6. Outro): ______________________________</small></td><td>&#9744; Sim<br><small>Qual: __________</small></td><td></td></tr>`).join('')}</tbody></table>
+      <p style="font-size:9px;margin-top:6px">LEGENDA: ${legend}</p></div>`;
+  }
+  try { localStorage.setItem(BLANK_KEY, String(from + qty)); } catch (e) {}
+  closeDlg();
+  const st = document.createElement('style'); st.id = 'pgBlank'; st.textContent = '@page{size:A4 landscape;margin:8mm}'; document.head.appendChild(st);
+  $('#printArea').innerHTML = html;
+  window.addEventListener('afterprint', () => { st.remove(); }, { once: true });
+  setTimeout(() => window.print(), 60);
+}
+
+/* ================= cadastro rápido (＋ ao lado do campo, sem sair da tela) ================= */
+const QUICK = {
+  sector: { title: 'Novo setor', store: 'sectors', fields: [['nome', 'Nome do setor']], make: v => ({ id: uid(), nome: v.nome }), opts: () => sectorOptions().map(s => [s.id, s.nome]) },
+  reason: { title: 'Novo motivo', store: 'reasons', fields: [['nome', 'Descrição do motivo']], make: v => ({ id: uid(), nome: v.nome }), opts: () => S.reasons.map(r => [r.id, r.nome]) },
+  snack: { title: 'Nova opção de lanche', store: 'snacks', fields: [['nome', 'Nome'], ['preco', 'Preço (R$)']], make: v => ({ id: uid(), nome: v.nome, preco: parseNum(v.preco), ord: nextOrd(S.snacks) }), opts: () => S.snacks.map(o => [o.id, snackLabel(o)]) }
+};
+const plusBtn = (kind, label) => `<button type="button" class="btn plus" data-act="qa-open" data-kind="${kind}" aria-label="${label}" title="${label}">${ic('plus')}</button>`;
+const quickPanel = kind => `<div class="qa" data-qa="${kind}" hidden>${QUICK[kind].fields.map(([k, l]) => `<input data-qf="${k}" placeholder="${l}" aria-label="${l}" ${k === 'preco' ? 'inputmode="decimal"' : 'maxlength="80"'}>`).join('')}
+  <button type="button" class="btn primary" data-act="qa-save" data-kind="${kind}">${ic('check')}Incluir</button><button type="button" class="btn" data-act="qa-cancel" data-kind="${kind}">Cancelar</button></div>`;
+const optionsHTML = (opts, sel, blank = 'Selecione…') => `<option value="">${blank}</option>` + opts.map(([v, l]) => `<option value="${esc(v)}" ${v === sel ? 'selected' : ''}>${esc(l)}</option>`).join('');
+async function quickSave(kind, btn) {
+  const panel = btn.closest('[data-qa]'), q = QUICK[kind], v = {};
+  panel.querySelectorAll('[data-qf]').forEach(i => { v[i.dataset.qf] = i.value.trim(); });
+  if (!v.nome) return toast('Informe o nome.');
+  const dup = { sectors: S.sectors, reasons: S.reasons, snacks: S.snacks }[q.store].find(x => norm(x.nome) === norm(v.nome));
+  if (dup) return toast('Esse cadastro já existe. Selecione-o na lista.');
+  const rec = q.make(v); await DB.put(q.store, rec); await reload(q.store); await log('Cadastro rápido', `${q.title}: ${rec.nome}`);
+  const sel = panel.parentElement.querySelector('select'); if (sel) { sel.innerHTML = optionsHTML(q.opts(), rec.id); sel.value = rec.id; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  panel.hidden = true; panel.querySelectorAll('input').forEach(i => { i.value = ''; }); toast('Incluído e selecionado.');
+}
+
+/* ================= modal de lançamento ================= */
+function openEntry(id) {
+  if (!canWrite()) return;
+  if (!S.sectors.length) return toast('Cadastre ao menos um setor em Configurações RH.');
+  const ed = id ? S.entries.find(e => e.id === id) : null, locked = !!scopeSector();
+  S.draft = { id: ed?.id || null, sectorId: ed ? ed.sectorId : (scopeSector() || S.f.sectorId || sectorOptions()[0].id), emps: ed ? [ed.empId] : [], apoio: !!ed?.apoio, touched: !!ed?.trocado, ack: false };
+  const v = ed || {}, ro = (cond, html) => cond ? html : '';
+  const sectorField = (fshow('setor') || locked && false) ? `<div class="fld"><label for="e-sector">Setor</label><div class="row"><select id="e-sector" name="sectorId" ${locked ? 'disabled' : ''}>${optionsHTML(sectorOptions().map(s => [s.id, s.nome]), S.draft.sectorId, 'Selecione…')}</select>${isRH() ? plusBtn('sector', 'Cadastrar setor') : ''}</div>${isRH() ? quickPanel('sector') : ''}</div>` : '';
+  openDlg(`<form id="fEntry" class="dlgbox" novalidate>
+    <h2>${ed ? 'Editar lançamento' : 'Novo lançamento de hora extra'}</h2>
+    <div class="two"><label class="fld">Data *<input type="date" name="date" value="${v.date || todayISO()}"></label>${sectorField}</div>
+    ${ro(fshow('apoio'), `<label class="chk"><input type="checkbox" name="apoio" ${v.apoio ? 'checked' : ''}> Colaborador de <b>outro setor</b> (veio como apoio)</label>`)}
+    <div class="fld"><span>Quem fez hora extra *</span><div id="empPick"></div></div>
+    <div class="fld"><label for="e-reason">Motivo *</label><div class="row"><select id="e-reason" name="reasonId">${optionsHTML(S.reasons.map(r => [r.id, r.nome]), v.reasonId)}</select>${can('novoMotivo') ? plusBtn('reason', 'Cadastrar motivo') : ''}</div>${can('novoMotivo') ? quickPanel('reason') : ''}</div>
+    <label class="fld" id="w-outro" hidden>Descreva o motivo (fora da lista padrão) *<input name="reasonOutro" maxlength="120" value="${esc(v.reasonOutro || '')}" placeholder="Ex.: inventário anual, visita de cliente"></label>
+    <div class="two"><label class="fld">Hora início *<input type="time" name="start" value="${v.start || ''}"></label><label class="fld">Hora fim *<input type="time" name="end" value="${v.end || ''}"></label></div>
+    ${ro(fshow('intervalo'), `<label class="chk"><input type="checkbox" name="hasInt" ${v.hasInt ? 'checked' : ''}> Teve intervalo (almoço/janta)? Desconta do total</label>
+      <div class="two" id="w-int" ${v.hasInt ? '' : 'hidden'}><label class="fld">Início do intervalo<input type="time" name="intIni" value="${v.intIni || ''}"></label><label class="fld">Fim do intervalo<input type="time" name="intFim" value="${v.intFim || ''}"></label></div>`)}
+    ${ro(fshow('lanche'), `<div class="fld"><label for="e-snack">Opção de lanche</label><div class="row"><select id="e-snack" name="opcaoId">${optionsHTML(S.snacks.map(o => [o.id, snackLabel(o)]), v.opcaoId, 'Sem lanche')}</select>${can('novaOpcao') ? plusBtn('snack', 'Cadastrar opção de lanche') : ''}</div>${can('novaOpcao') ? quickPanel('snack') : ''}</div>`)}
+    ${ro(fshow('lanche') && (fshow('quantidade') || fshow('preco')), `<div class="two">${ro(fshow('quantidade'), `<label class="fld">Quantidade por pessoa<input type="number" name="qtd" min="0" step="1" value="${v.qtd ?? 1}"></label>`)}${ro(fshow('preco'), `<label class="fld">Preço unitário (R$)<input name="preco" inputmode="decimal" value="${v.preco != null ? num2(v.preco) : ''}"></label>`)}</div>`)}
+    ${ro(fshow('obs'), `<label class="fld">Observação${S.settings.form.obsObrigatoria && !isRH() ? ' *' : ''}<textarea name="obs" rows="2" maxlength="500" placeholder="${S.settings.form.obsObrigatoria ? 'Obrigatória: o que foi feito e por quê.' : 'Opcional: anote o que achar relevante.'}">${esc(v.obs || '')}</textarea></label>`)}
+    <div class="sumgrid"><div class="sumbox"><b id="s-bruta">—</b><span>Horas (sem intervalo)</span></div><div class="sumbox"><b id="s-liq">—</b><span>Horas líquidas</span></div>${showMoney() ? '<div class="sumbox"><b id="s-custo">R$ 0,00</b><span>Custo do lanche</span></div>' : ''}</div>
+    <div class="rule" id="s-regra">Preencha data e horários para ver a regra de lanche aplicável.</div>
+    <div id="entryInfo" class="info" aria-live="polite" hidden></div>
+    ${isRH() ? `<label class="fld">Situação<select name="status"><option value="enviado" ${(v.status || 'enviado') === 'enviado' ? 'selected' : ''}>Enviado ao RH</option><option value="rascunho" ${v.status === 'rascunho' ? 'selected' : ''}>Rascunho</option></select></label>` : ''}
+    <div id="entryErr" class="err" role="alert"></div>
+    <div class="dlgact"><button type="button" class="btn" data-act="dlg-close">Cancelar</button>${can('trocarLanche') && fshow('lanche') ? '<button type="button" class="btn" data-act="swap-snack">Trocar lanche</button>' : ''}<button type="submit" class="btn primary">${ic('check')}${ed ? 'Salvar alterações' : 'Salvar lançamento'}</button></div>
+  </form>`, 'lg');
+  $('#w-outro').hidden = !(v.reasonId && isOutro(v.reasonId));
+  renderEmpPick(); entryChanged();
+}
+function renderEmpPick() {
+  const d = S.draft, chosen = new Set(d.emps);
+  const pool = S.employees.filter(e => e.ativo !== false && !chosen.has(e.id) && (d.apoio ? true : e.sectorId === d.sectorId)).sort(byName);
+  const lab = e => d.apoio && e.sectorId !== d.sectorId ? `${e.nome} (${sectorName(e.sectorId)})` : e.nome;
+  $('#empPick').innerHTML = `<div class="chips">${d.emps.map(id => `<span class="chip">${esc(empName(id))}<button type="button" data-act="chip-x" data-id="${id}" aria-label="Remover ${esc(empName(id))}">×</button></span>`).join('')}</div>
+    <div class="row"><select id="empSel" aria-label="Selecionar colaborador"><option value="">${pool.length ? 'Selecionar colaborador…' : 'Nenhum colaborador disponível'}</option>${pool.map(e => `<option value="${e.id}">${esc(lab(e))}</option>`).join('')}</select>${can('novoColab') ? plusBtn('emp', 'Cadastrar colaborador') : ''}</div>
+    <div class="qa" id="empNew" hidden><input id="empNewName" maxlength="60" placeholder="Nome do novo colaborador" aria-label="Nome do novo colaborador"><button type="button" class="btn primary" data-act="emp-new-save">${ic('check')}Incluir</button><button type="button" class="btn" data-act="emp-new-cancel">Cancelar</button></div>`;
+}
+function addEmp(id) { if (!id) return; const d = S.draft; if (d.id) d.emps = [id]; else if (!d.emps.includes(id)) d.emps.push(id); renderEmpPick(); entryChanged(); }
+async function saveNewEmp() {
+  const inp = $('#empNewName'), nome = inp.value.trim(); if (!nome) return inp.focus();
+  let e = S.employees.find(x => x.sectorId === S.draft.sectorId && norm(x.nome) === norm(nome));
+  if (!e) { e = { id: uid(), nome, sectorId: S.draft.sectorId, ativo: true }; await DB.put('employees', e); await reload('employees'); await log('Cadastro rápido', `Colaborador ${nome} em ${sectorName(e.sectorId)}`); }
+  else if (e.ativo === false) { e.ativo = true; await DB.put('employees', e); await reload('employees'); }
+  addEmp(e.id);
+}
+const ef = () => $('#fEntry').elements;
+const snackPrice = id => S.om.get(id)?.preco ?? 0;
+function applySuggestion() {
+  const el = ef(), c = calcHoras(el.start.value, el.end.value, el.hasInt?.checked, el.intIni?.value, el.intFim?.value), r = regraAplicavel(el.date.value, el.start.value, el.end.value, c.bruta);
+  const lockedByRule = !can('trocarLanche') || !fshow('lanche');
+  if (!(lockedByRule || !S.draft.touched) || !c.bruta) return r;
+  const oid = r ? (r.sugestao || '') : '';
+  if (el.opcaoId) { el.opcaoId.value = oid; if (el.qtd) el.qtd.value = oid ? (r.qtdPadrao || 1) : 0; if (el.preco) el.preco.value = oid ? num2(snackPrice(oid)) : ''; }
+  S.draft.auto = oid ? { opcaoId: oid, qtd: r.qtdPadrao || 1 } : null;
+  return r;
+}
+function lockSnackFields() { const el = ef(), lock = !can('trocarLanche'); if (el.opcaoId) el.opcaoId.disabled = lock; if (el.qtd) el.qtd.disabled = lock; }
+function entryChanged() {
+  const f = $('#fEntry'); if (!f) return; const el = f.elements, d = S.draft;
+  const c = calcHoras(el.start.value, el.end.value, el.hasInt?.checked, el.intIni?.value, el.intFim?.value), r = applySuggestion(); lockSnackFields();
+  $('#s-bruta').textContent = c.bruta ? fmtH(c.bruta) : '—'; $('#s-liq').textContent = c.bruta ? fmtH(c.liq) + (c.inter ? ` (−${fmtH(c.inter)})` : '') : '—';
+  $('#s-regra').innerHTML = (el.start.value && el.end.value) ? descRegra(r) : 'Preencha data e horários para ver a regra de lanche aplicável.';
+  const oid = el.opcaoId ? el.opcaoId.value : (r?.sugestao || ''), q = el.qtd ? (+el.qtd.value || 0) : (r?.qtdPadrao || 1), p = el.preco ? parseNum(el.preco.value) : snackPrice(oid);
+  const cu = $('#s-custo'); if (cu) cu.textContent = money(oid ? q * p : 0);
+  const w = [], date = el.date.value, dur = c.liq, lim = S.settings;
+  if (c.bruta && date) d.emps.forEach(id => {
+    const mine = S.entries.filter(x => x.empId === id && x.id !== d.id), day = sum(mine.filter(x => x.date === date), x => x.min), mon = sum(mine.filter(x => x.date.slice(0, 7) === date.slice(0, 7)), x => x.min);
+    const a = toMin(el.start.value), b = a + c.bruta;
+    mine.filter(x => x.date === date).forEach(x => { const s = toMin(x.start), e = s + x.bruta; if (a < e && s < b) w.push(`${empName(id)} já tem lançamento neste dia das ${x.start} às ${x.end} (conflito de horário).`); });
+    if (lim.limiteDia && day + dur > lim.limiteDia * 60) w.push(`${empName(id)} chega a ${fmtH(day + dur)} no dia (limite de ${lim.limiteDia}h).`);
+    if (limMes() && mon + dur > limMes() * 60) w.push(`${empName(id)} chega a ${fmtH(mon + dur)} no mês (limite de ${limMes()}h).`);
+    else if (limMes() && (mon + dur) / (limMes() * 60) * 100 >= limAviso()) w.push(`${empName(id)} chega a ${fmtH(mon + dur)} no mês, ${Math.round((mon + dur) / (limMes() * 60) * 100)}% do limite de ${limMes()}h.`);
+  });
+  const box = $('#entryInfo'); box.hidden = !w.length; box.innerHTML = w.map(x => `<div class="w">Atenção: ${esc(x)}</div>`).join('');
+  d.conflict = w.some(x => x.includes('conflito'));
+}
+async function submitEntry(f) {
+  const el = f.elements, err = m => { $('#entryErr').textContent = m; }, d = S.draft, date = el.date.value;
+  const c = calcHoras(el.start.value, el.end.value, el.hasInt?.checked, el.intIni?.value, el.intFim?.value);
+  if (!date) return err('Informe a data.');
+  if (!d.emps.length) return err('Escolha ao menos um colaborador.');
+  if (!el.reasonId.value) return err('Escolha o motivo.');
+  if (isOutro(el.reasonId.value) && !el.reasonOutro.value.trim()) return err('Descreva o motivo "Outro".');
+  if (!el.start.value || !el.end.value || !c.bruta) return err('Informe início e fim diferentes.');
+  if (el.hasInt?.checked && !(el.intIni.value && el.intFim.value)) return err('Informe o início e o fim do intervalo.');
+  if (el.obs && !isRH() && S.settings.form.obsObrigatoria && !el.obs.value.trim()) return err('A observação é obrigatória.');
+  applySuggestion();
+  let opcaoId = el.opcaoId ? el.opcaoId.value : (S.draft.auto?.opcaoId || ''), qtd = el.qtd ? (+el.qtd.value || 0) : (S.draft.auto?.qtd || 1);
+  if (!opcaoId) qtd = 0; else if (qtd < 1) return err('A quantidade de lanches deve ser 1 ou mais (ou escolha "Sem lanche").');
+  const preco = opcaoId ? (el.preco ? parseNum(el.preco.value) : snackPrice(opcaoId)) : 0;
+  if (d.conflict && !d.ack) { d.ack = true; return err('Há conflito de horário. Clique em Salvar novamente para confirmar.'); }
+  const now = new Date().toISOString(), sectorId = scopeSector() || d.sectorId, apoio = !!el.apoio?.checked;
+  const base = { date, sectorId, apoio, reasonId: el.reasonId.value, reasonOutro: isOutro(el.reasonId.value) ? el.reasonOutro.value.trim() : '', start: el.start.value, end: el.end.value,
+    hasInt: !!el.hasInt?.checked, intIni: el.hasInt?.checked ? el.intIni.value : '', intFim: el.hasInt?.checked ? el.intFim.value : '', bruta: c.bruta, inter: c.inter, min: c.liq,
+    opcaoId, qtd, preco, obs: el.obs ? el.obs.value.trim() : '', trocado: !!d.touched };
+  if (d.id) {
+    const ex = S.entries.find(e => e.id === d.id);
+    await DB.put('entries', { ...ex, ...base, empId: d.emps[0], status: isRH() ? el.status.value : ex.status, updatedAt: now });
+    await log('Editou lançamento', `${empName(d.emps[0])} em ${fmtDate(date)}`);
+  } else {
+    const status = isRH() ? el.status.value : 'rascunho';
+    await DB.putMany('entries', d.emps.map(empId => ({ id: uid(), ...base, empId, status, by: S.me.nome, createdAt: now, updatedAt: now })));
+    await log('Novo lançamento', `${d.emps.map(empName).join(', ')} em ${fmtDate(date)} (${fmtH(c.liq)})`);
+  }
+  await reload('entries'); closeDlg(); renderView(); toast(d.id ? 'Lançamento atualizado.' : `${d.emps.length} lançamento(s) salvo(s).`);
+}
+async function setStatus(ids, status) {
+  const now = new Date().toISOString(), recs = ids.map(id => S.entries.find(e => e.id === id)).filter(Boolean).map(e => ({ ...e, status, updatedAt: now }));
+  await DB.putMany('entries', recs); await reload('entries'); await log(status === 'enviado' ? 'Enviou ao RH' : 'Reabriu lançamentos', `${recs.length} registro(s)`); renderView();
+}
+
+/* ================= cadastros (inline, na própria tela) ================= */
+const sectorOpts = () => sectorOptions().map(s => [s.id, s.nome]);
+const snackOpts = () => S.snacks.map(o => [o.id, o.nome]);
+const CRUD = {
+  users: { noun: 'usuário', hint: 'Quem acessa o sistema. O líder lança e acompanha só o próprio setor; a gestão só consulta.', items: () => S.users,
+    fields: [{ k: 'nome', l: 'Nome completo', req: 1, max: 60 }, { k: 'usuario', l: 'Usuário (login, sem espaços)', req: 1, max: 30 }, { k: 'senha', l: 'Senha (mínimo 6 caracteres)', type: 'password' },
+      { k: 'perfil', l: 'Perfil', type: 'select', def: 'lider', req: 1, opts: () => [['lider', 'Líder de setor (só o seu setor)'], ['gestor', 'Gestão (consulta tudo)'], ['rh', 'RH (administrador)']] },
+      { k: 'sectorId', l: 'Setor do líder', type: 'select', opts: sectorOpts, add: 'sector', when: ['perfil', 'lider'] }],
+    cols: [['Nome', u => u.nome], ['Usuário', u => u.usuario], ['Perfil', u => PERFIL[u.perfil]], ['Setor', u => u.sectorId ? sectorName(u.sectorId) : '—']],
+    save(v, ex) {
+      const usuario = v.usuario.trim(), nome = v.nome.trim();
+      if (!/^\S{2,}$/.test(usuario)) return { error: 'O usuário não pode ter espaços.' };
+      if (S.users.some(u => u.id !== ex?.id && u.usuario.toLowerCase() === usuario.toLowerCase())) return { error: 'Já existe usuário com esse login.' };
+      if (!ex && !v.senha) return { error: 'Defina uma senha para o novo usuário.' };
+      if (v.senha && v.senha.length < 6) return { error: 'A senha precisa ter ao menos 6 caracteres.' };
+      if (v.perfil === 'lider' && !v.sectorId) return { error: 'O líder precisa ter um setor. Use o ＋ ao lado para criar um agora.' };
+      if (ex && ex.id === S.me.id && v.perfil !== 'rh') return { error: 'Você não pode tirar o próprio acesso de RH.' };
+      const rec = { ...(ex || { id: uid(), createdAt: new Date().toISOString() }), nome, usuario, perfil: v.perfil, sectorId: v.perfil === 'lider' ? v.sectorId : null };
+      if (v.senha) { rec.salt = uid(); rec.hash = hashPwd(v.senha, rec.salt); }
+      return { rec, log: `${ex ? 'Alterou' : 'Criou'} usuário ${usuario}` };
+    },
+    canDelete: u => u.id === S.me.id ? 'Você não pode excluir o próprio usuário.' : (u.perfil === 'rh' && S.users.filter(x => x.perfil === 'rh').length === 1 ? 'Não pode excluir o último usuário de RH.' : null) },
+  sectors: { noun: 'setor', hint: 'Setores que lançam horas extras.', items: () => S.sectors,
+    fields: [{ k: 'nome', l: 'Nome do setor', req: 1, max: 60 }],
+    cols: [['Setor', d => d.nome], ['Colaboradores', d => S.employees.filter(e => e.sectorId === d.id).length], ['Lançamentos', d => S.entries.filter(e => e.sectorId === d.id).length]],
+    save(v, ex) { const nome = v.nome.trim(); if (S.sectors.some(d => d.id !== ex?.id && norm(d.nome) === norm(nome))) return { error: 'Esse setor já existe.' }; return { rec: { ...(ex || { id: uid() }), nome }, log: `${ex ? 'Alterou' : 'Criou'} setor ${nome}` }; },
+    canDelete: d => (S.employees.some(e => e.sectorId === d.id) || S.entries.some(e => e.sectorId === d.id) || S.users.some(u => u.sectorId === d.id)) ? 'Há colaboradores, usuários ou lançamentos neste setor. Ele não pode ser excluído.' : null },
+  employees: { noun: 'colaborador', hint: 'Aparecem na lista do líder ao lançar. Prefira marcar como inativo quando já houver lançamentos.', items: () => S.employees,
+    fields: [{ k: 'nome', l: 'Nome completo', req: 1, max: 60 }, { k: 'sectorId', l: 'Setor', type: 'select', req: 1, opts: sectorOpts, add: 'sector' }, { k: 'ativo', l: 'Ativo (aparece nos lançamentos)', type: 'check', def: true }],
+    cols: [['Colaborador', e => e.nome], ['Setor', e => sectorName(e.sectorId)], ['Situação', e => e.ativo === false ? 'Inativo' : 'Ativo']],
+    save(v, ex) { const nome = v.nome.trim(); if (S.employees.some(e => e.id !== ex?.id && e.sectorId === v.sectorId && norm(e.nome) === norm(nome))) return { error: 'Já existe colaborador com esse nome nesse setor.' }; return { rec: { ...(ex || { id: uid() }), nome, sectorId: v.sectorId, ativo: !!v.ativo }, log: `${ex ? 'Alterou' : 'Criou'} colaborador ${nome}` }; },
+    canDelete: e => { const n = S.entries.filter(x => x.empId === e.id).length; return n ? `Há ${n} lançamentos deste colaborador. Marque-o como inativo.` : null; } },
+  snacks: { noun: 'opção de lanche', hint: 'Opções disponíveis no lançamento, com o preço unitário.', items: () => S.snacks,
+    fields: [{ k: 'nome', l: 'Nome', req: 1, max: 60 }, { k: 'preco', l: 'Preço unitário (R$)', type: 'number', req: 1 }, { k: 'ord', l: 'Posição na lista e na ficha (1 = primeiro)', type: 'number' }],
+    cols: [['Ordem', o => o.ord ?? ''], ['Opção', o => o.nome], ['Preço', o => money(o.preco)]],
+    save(v, ex) { const nome = v.nome.trim(); if (S.snacks.some(o => o.id !== ex?.id && norm(o.nome) === norm(nome))) return { error: 'Essa opção já existe.' }; return { rec: { ...(ex || { id: uid(), ord: nextOrd(S.snacks) }), nome, preco: parseNum(v.preco), ord: parseInt(v.ord) > 0 ? parseInt(v.ord) : (ex?.ord ?? nextOrd(S.snacks)) }, log: `${ex ? 'Alterou' : 'Criou'} opção ${nome}` }; },
+    canDelete: o => (S.entries.some(e => e.opcaoId === o.id) || S.rules.some(r => r.sugestao === o.id || (r.opcoesPermitidas || []).includes(o.id))) ? 'Há lançamentos ou regras usando esta opção.' : null },
+  reasons: { noun: 'motivo', hint: 'Motivos que o líder escolhe. Um motivo com a palavra "Outro" exige descrição.', items: () => S.reasons,
+    fields: [{ k: 'nome', l: 'Descrição (com numeração, ex.: "4. Cobertura de Falta")', req: 1, max: 120 }], cols: [['Motivo', r => r.nome]],
+    save(v, ex) { const nome = v.nome.trim(); if (S.reasons.some(r => r.id !== ex?.id && norm(r.nome) === norm(nome))) return { error: 'Esse motivo já existe.' }; return { rec: { ...(ex || { id: uid() }), nome }, log: `${ex ? 'Alterou' : 'Criou'} motivo` }; },
+    canDelete: r => S.entries.some(e => e.reasonId === r.id) ? 'Há lançamentos com este motivo.' : null },
+  rules: { noun: 'regra', hint: 'Define quando o lanche é concedido e qual opção o formulário sugere sozinho. A primeira regra ativa que servir é usada.', items: () => S.rules, nosort: true,
+    fields: [{ k: 'tipoDia', l: 'Tipo de dia', type: 'select', req: 1, def: 'semana', opts: () => [['semana', 'Dia de semana'], ['fds', 'Fim de semana'], ['todos', 'Qualquer dia']] },
+      { k: 'minHoras', l: 'Mínimo de horas de HE (vazio = ignora)', type: 'number' }, { k: 'horaLimite', l: 'E trabalhou até pelo menos (vazio = ignora)', type: 'time' },
+      { k: 'sugestao', l: 'Sugestão automática no formulário', type: 'select', opts: snackOpts }, { k: 'qtdPadrao', l: 'Quantidade padrão da sugestão', type: 'number', def: 1 },
+      { k: 'opcoesPermitidas', l: 'Opções permitidas nesta regra', type: 'multi', opts: snackOpts }, { k: 'ativo', l: 'Regra ativa', type: 'check', def: true }],
+    cols: [['Regra', descRegraCurta], ['Situação', r => r.ativo !== false ? 'Ativa' : 'Inativa']],
+    save(v, ex) { return { rec: { ...(ex || { id: uid() }), tipoDia: v.tipoDia, minHoras: v.minHoras === '' ? '' : parseNum(v.minHoras), horaLimite: v.horaLimite, sugestao: v.sugestao, qtdPadrao: parseNum(v.qtdPadrao) || 1, opcoesPermitidas: v.opcoesPermitidas, ativo: !!v.ativo }, log: `${ex ? 'Alterou' : 'Criou'} regra de lanche` }; },
+    canDelete: () => null }
+};
+const SUBTABS = [['users', 'Usuários'], ['sectors', 'Setores'], ['employees', 'Colaboradores'], ['snacks', 'Lanches'], ['reasons', 'Motivos'], ['rules', 'Regras de lanche'], ['form', 'Formulário e permissões'], ['data', 'Dados'], ['audit', 'Auditoria']];
+function vSettings() {
+  $('#view').innerHTML = `<div class="pagehead"><h1>Configurações RH</h1></div>
+    <div class="subtabs" role="tablist">${SUBTABS.map(([k, l]) => `<button class="tab" role="tab" data-act="cfg-tab" data-v="${k}" ${S.tab === k ? 'aria-current="page"' : ''}>${l}</button>`).join('')}</div><div id="cfg" style="display:grid;gap:14px"></div>`;
+  if (CRUD[S.tab]) renderCrud(S.tab); else ({ form: cfgForm, data: cfgData, audit: cfgAudit })[S.tab]();
+}
+function fieldHTML(f, ed) {
+  const val = ed ? ed[f.k] : (f.def ?? ''), when = f.when ? `data-wk="${f.when[0]}" data-wv="${f.when[1]}"` : '', id = 'cf-' + f.k;
+  if (f.type === 'check') return `<label class="chk" ${when}><input type="checkbox" name="${f.k}" ${(ed ? val !== false && !!val : !!f.def) ? 'checked' : ''}> ${f.l}</label>`;
+  if (f.type === 'multi') { const sel = Array.isArray(val) ? val : []; return `<div class="fld wide" ${when}><span>${f.l}</span><div class="two">${f.opts().map(([v, l]) => `<label class="chk"><input type="checkbox" name="${f.k}" value="${esc(v)}" ${sel.includes(v) ? 'checked' : ''}> ${esc(l)}</label>`).join('') || '<span class="muted">Cadastre opções de lanche primeiro.</span>'}</div></div>`; }
+  if (f.type === 'select') return `<div class="fld" ${when}><label for="${id}">${f.l}</label><div class="row"><select id="${id}" name="${f.k}">${optionsHTML(f.opts(), val)}</select>${f.add ? plusBtn(f.add, 'Cadastrar ' + QUICK[f.add].title.toLowerCase().replace('novo ', '').replace('nova ', '')) : ''}</div>${f.add ? quickPanel(f.add) : ''}</div>`;
+  if (f.type === 'password') return `<div class="fld"><label for="${id}">${f.l}</label><input id="${id}" type="password" name="${f.k}" autocomplete="new-password" placeholder="${ed ? 'Deixe em branco para manter' : ''}"></div>`;
+  if (f.type === 'number') return `<div class="fld"><label for="${id}">${f.l}</label><input id="${id}" name="${f.k}" inputmode="decimal" value="${val === '' || val == null ? '' : String(val).replace('.', ',')}"></div>`;
+  if (f.type === 'time') return `<div class="fld"><label for="${id}">${f.l}</label><input id="${id}" type="time" name="${f.k}" value="${esc(val || '')}"></div>`;
+  return `<div class="fld"><label for="${id}">${f.l}</label><input id="${id}" name="${f.k}" value="${esc(val)}" maxlength="${f.max || 80}" autocomplete="off"></div>`;
+}
+function renderCrud(t) {
+  const c = CRUD[t], ed = S.edit?.tab === t ? c.items().find(x => x.id === S.edit.id) : null;
+  const items = c.items().slice(); if (!c.nosort) items.sort((a, b) => (a.sectorId && b.sectorId && a.sectorId !== b.sectorId) ? sectorName(a.sectorId).localeCompare(sectorName(b.sectorId), 'pt-BR') : byName(a, b));
+  $('#cfg').innerHTML = `<form id="fCrud" class="panel crudform"><h2>${ed ? 'Editar' : 'Incluir'} ${c.noun}</h2><p class="muted">${c.hint}</p>
+    ${c.fields.map(f => fieldHTML(f, ed)).join('')}
+    <div class="crudbtns"><button class="btn primary" type="submit">${ic(ed ? 'check' : 'plus')}${ed ? 'Salvar alterações' : 'Incluir'}</button>${ed ? '<button type="button" class="btn" data-act="crud-cancel">Cancelar edição</button>' : ''}</div>
+    <div id="crudErr" class="err wide" role="alert"></div></form>
+    <section class="panel">${items.length ? `<div class="tblwrap"><table class="tbl"><thead><tr>${c.cols.map(([h]) => `<th>${h}</th>`).join('')}<th></th></tr></thead><tbody>
+    ${items.map(r => `<tr>${c.cols.map(([h, fn]) => `<td data-label="${h}">${esc(fn(r))}</td>`).join('')}<td class="act">${ibtn('crud-edit', 'edit', 'Editar', { id: r.id, only: true })}${ibtn('crud-del', 'trash', 'Excluir', { id: r.id, only: true, cls: 'warnbtn' })}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty">Nenhum cadastro ainda.</div>`}</section>`;
+  syncWhen();
+}
+function syncWhen() { $$('[data-wk]').forEach(el => { const src = $(`#fCrud [name="${el.dataset.wk}"]`); el.hidden = !src || src.value !== el.dataset.wv; }); }
+async function submitCrud(f) {
+  const t = S.tab, c = CRUD[t], ed = S.edit?.tab === t ? c.items().find(x => x.id === S.edit.id) : null, v = {};
+  for (const fl of c.fields) {
+    if (fl.type === 'multi') v[fl.k] = $$(`[name="${fl.k}"]:checked`, f).map(i => i.value);
+    else if (fl.type === 'check') v[fl.k] = f.elements[fl.k].checked;
+    else v[fl.k] = f.elements[fl.k].value.trim ? f.elements[fl.k].value.trim() : f.elements[fl.k].value;
+    const hidden = fl.when && f.elements[fl.when[0]].value !== fl.when[1];
+    if (fl.req && !hidden && (v[fl.k] === '' || v[fl.k] == null)) { $('#crudErr').textContent = 'Preencha: ' + fl.l.replace(/\s*\(.*\)/, ''); return; }
+  }
+  const r = c.save(v, ed); if (r.error) { $('#crudErr').textContent = r.error; return; }
+  await DB.put(t, r.rec); await reload(t); await log(r.log); S.edit = null;
+  if (t === 'users' || t === 'sectors') renderShell(); else renderView(); toast('Salvo.');
+}
+
+/* ================= formulário e permissões (regras de negócio por switch) ================= */
+const switchRow = (grp, k, title, hint, on) => `<label class="sw"><span class="sl"><b>${title}</b><small>${hint}</small></span><input type="checkbox" role="switch" data-cfg="${grp}.${k}" ${on ? 'checked' : ''}><span class="tg" aria-hidden="true"></span></label>`;
+function cfgForm() {
+  const s = S.settings, n = x => String(x).replace('.', ',');
+  $('#cfg').innerHTML = `<section class="panel"><h2>Campos do formulário de lançamento</h2>
+    <p class="muted">Escolha o que o <b>líder</b> enxerga ao lançar. O RH sempre vê todos os campos. Campo oculto não some do dado: o sistema usa o valor da regra ou do cadastro.</p>
+    ${FORM_FIELDS.map(([k, t, h]) => switchRow('form', k, t, h, s.form[k])).join('')}</section>
+  <section class="panel"><h2>Permissões do líder</h2><p class="muted">O que o líder pode fazer. Setores e usuários só o RH cria.</p>
+    ${PERMS.map(([k, t, h]) => switchRow('perm', k, t, h, s.perm[k])).join('')}</section>
+  <form id="fParams" class="panel crudform"><h2>Parâmetros gerais</h2><p class="muted">Usados nos avisos do lançamento. Ajuste conforme a política da empresa e a convenção coletiva.</p>
+    <label class="fld wide">Nome da empresa (aparece no cabeçalho)<input name="empresa" value="${esc(s.empresa)}" maxlength="60"></label>
+    <label class="fld">Limite diário por pessoa, em horas (0 = sem aviso)<input name="limiteDia" inputmode="decimal" value="${n(s.limiteDia)}"></label>
+    <div class="fld wide"><span>Teto mensal por pessoa</span><div class="toolbar"><b>${limMes() ? limMes() + ' h/mês (aviso a partir de ' + limAviso() + '%)' : 'Desligado'}</b><button type="button" class="btn sm" data-act="limit-open">${ic('edit')}Editar teto…</button></div></div>
+    <div class="crudbtns"><button class="btn primary" type="submit">Salvar parâmetros</button></div></form>
+  <section class="panel"><h2>Levar estas regras aos líderes</h2><p>Cada dispositivo guarda os próprios dados. Depois de mudar usuários, setores, regras ou os switches acima, exporte a configuração em <b>Dados</b> e envie o arquivo aos líderes; eles importam na tela de login ou aqui.</p></section>`;
+}
+async function setCfg(path, on) { const [g, k] = path.split('.'); S.settings[g][k] = on; await saveSettings(); await log('Alterou regra de negócio', `${g}.${k} = ${on ? 'ligado' : 'desligado'}`); toast('Salvo. Exporte a configuração para levar aos líderes.'); }
+async function submitParams(f) {
+  const v = Object.fromEntries(new FormData(f)); S.settings.empresa = v.empresa.trim(); S.settings.limiteDia = parseNum(v.limiteDia);
+  await saveSettings(); await log('Alterou parâmetros'); renderShell(); toast('Parâmetros salvos.');
+}
+function cfgAudit() {
+  const rows = S.audit.slice().sort((a, b) => b.at.localeCompare(a.at)).slice(0, 100);
+  $('#cfg').innerHTML = `<section class="panel"><h2>Auditoria (últimas 100 ações)</h2>${rows.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody>${rows.map(r => `<tr><td data-label="Quando">${new Date(r.at).toLocaleString('pt-BR')}</td><td data-label="Usuário">${esc(r.user)}</td><td data-label="Ação">${esc(r.action)}</td><td data-label="Detalhe">${esc(r.detail)}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Nada registrado ainda.</div>'}</section>`;
+}
+function cfgData() {
+  $('#cfg').innerHTML = `<section class="panel"><h2>Modo de dados</h2><label class="sw"><span class="sl"><b>Demonstração (dados simulados)</b><small>Ligado: usa uma base separada, já preenchida com setores, colaboradores e lançamentos fictícios, para testar e mostrar o sistema. Desligado: volta aos dados reais, que ficam intactos.</small></span><input type="checkbox" role="switch" data-mode ${MODE === 'demo' ? 'checked' : ''}><span class="tg" aria-hidden="true"></span></label>${MODE === 'demo' ? `<div class="toolbar" style="margin-top:12px"><button class="btn" data-act="demo-regen">${ic('undo')}Gerar dados simulados de novo</button></div>` : ''}</section>
+  <section class="panel"><h2>Configuração para os líderes</h2>
+    <p>Arquivo com usuários, setores, colaboradores, lanches, motivos, regras e os switches do formulário. Não leva lançamentos. Contém as senhas já embaralhadas (hash); trate como confidencial.</p>
+    <div class="toolbar"><button class="btn primary" data-act="export-config">${ic('down')}Exportar configuração</button>
+    <label class="btn" style="display:inline-flex;align-items:center">Importar configuração<input type="file" id="impCfg" accept=".json,application/json" hidden></label></div></section>
+  <section class="panel"><h2>Lançamentos em CSV</h2>
+    <p>Os líderes exportam o CSV em Lançamentos e o RH importa aqui. Setores e colaboradores novos são criados sozinhos, e lançamentos que já existem só são atualizados se o arquivo for mais recente.</p>
+    <p class="muted">Este dispositivo tem ${S.entries.length} lançamentos.</p>
+    <div class="toolbar"><button class="btn" data-act="export-all">${ic('down')}Exportar todos (CSV)</button><button class="btn" data-act="export-all-xlsx">${ic('sheet')}Exportar todos (.xlsx)</button>
+    <label class="btn" style="display:inline-flex;align-items:center">Importar CSV<input type="file" id="impFile" accept=".csv,text/csv" hidden></label></div></section>
+  <section class="panel"><h2>Backup completo (JSON)</h2><p>Tudo deste dispositivo: configuração e lançamentos. Restaurar substitui os dados atuais.</p>
+    <div class="toolbar"><button class="btn" data-act="export-backup">Baixar backup</button>
+    <label class="btn" style="display:inline-flex;align-items:center">Restaurar backup<input type="file" id="impBackup" accept=".json,application/json" hidden></label></div></section>
+  <section class="panel danger-zone"><h2>Zerar tudo</h2><p>Apaga todos os lançamentos deste dispositivo. Opcionalmente apaga também os cadastros. Não dá para desfazer; exporte antes.</p>
+    <button class="btn danger" data-act="reset-open">${ic('trash')}Zerar tudo…</button></section>`;
+}
+function resetDialog() {
+  return confirmDlg({ title: 'Zerar tudo?', danger: true, ok: 'Zerar tudo', typed: 'ZERAR',
+    body: `<p>Isso apaga <b>${S.entries.length} lançamentos</b> deste dispositivo. A ação não pode ser desfeita.</p>
+      <label class="chk"><input type="checkbox" id="rstCad"> Apagar também setores, colaboradores, lanches, motivos, regras e usuários de exemplo</label>
+      <p><button type="button" class="btn sm" data-act="export-all">Exportar CSV antes</button></p>` }).then(async ok => {
+    if (!ok) return; const withCad = $('#rstCad') ? $('#rstCad').checked : false;
+    await DB.clear('entries');
+    if (withCad) { for (const s of ['sectors', 'employees', 'reasons', 'snacks', 'rules']) await DB.clear(s); for (const u of S.users.filter(x => x.demo)) await DB.del('users', u.id); }
+    for (const s of [...CONFIG_STORES, 'entries']) await reload(s);
+    await log('Zerou os dados', withCad ? 'Lançamentos e cadastros' : 'Lançamentos'); renderShell(); toast('Dados zerados.');
+  });
+}
+
+/* ================= teto mensal: modal do RH ================= */
+function openLimit() {
+  if (!isRH()) return;
+  const s = S.settings;
+  openDlg(`<form id="fLimit" class="dlgbox"><h2>Teto mensal de horas extras</h2>
+    <p class="muted">Quando ligado, o painel mostra quem está perto do teto e o formulário avisa o líder. Vale por colaborador, em cada mês.</p>
+    <label class="sw"><span class="sl"><b>Controle de teto ligado</b><small>Desligado: nenhum aviso de limite mensal aparece.</small></span><input type="checkbox" role="switch" name="ativo" ${s.limiteAtivo !== false ? 'checked' : ''}><span class="tg" aria-hidden="true"></span></label>
+    <div class="two"><label class="fld">Limite mensal por pessoa (horas)<input name="lim" inputmode="decimal" value="${String(s.limiteMes ?? 40).replace('.', ',')}"></label>
+      <label class="fld">Avisar a partir de (% do limite)<input name="aviso" inputmode="numeric" value="${limAviso()}"></label></div>
+    <div id="limErr" class="err" role="alert"></div>
+    <div class="dlgact"><button type="button" class="btn" data-act="dlg-close">Cancelar</button><button type="submit" class="btn primary">${ic('check')}Salvar</button></div></form>`);
+}
+async function submitLimit(f) {
+  const lim = parseNum(f.elements.lim.value), av = parseInt(f.elements.aviso.value);
+  if (!(lim > 0 && lim <= 300)) return $('#limErr').textContent = 'Informe um limite entre 1 e 300 horas.';
+  if (!(av >= 1 && av <= 99)) return $('#limErr').textContent = 'O aviso deve ficar entre 1% e 99%.';
+  S.settings.limiteAtivo = f.elements.ativo.checked; S.settings.limiteMes = lim; S.settings.limiteAviso = av;
+  await saveSettings(); await log('Alterou teto mensal', `${S.settings.limiteAtivo ? lim + 'h, aviso em ' + av + '%' : 'desligado'}`); closeDlg(); renderShell(); toast('Teto mensal salvo.');
+}
+
+/* ================================================================================
+   ANÁLISES E NARRAÇÃO
+   Peças aproveitadas do DataViz Pro e adaptadas ao domínio de horas extras:
+   - método IQR para valores atípicos (quantile/detectOutliers)
+   - regressão linear com R² para decidir se a tendência merece ser mostrada
+   - comparação de período e curva ABC (Pareto: A até 80%, B até 95%, C o resto)
+   - calendário de calor
+   - motor de narração por voz (Web Speech), com legenda palavra a palavra
+   Tudo é calculado localmente, sem serviço externo.
+   ================================================================================ */
+const quantile = (sorted, q) => {
+  if (!sorted.length) return 0; const pos = (sorted.length - 1) * q, b = Math.floor(pos), r = pos - b;
+  return sorted[b + 1] !== undefined ? sorted[b] + r * (sorted[b + 1] - sorted[b]) : sorted[b];
+};
+function linReg(ys) {
+  const n = ys.length, xs = ys.map((_, i) => i), mx = sum(xs, x => x) / n, my = sum(ys, y => y) / n;
+  let num = 0, den = 0; for (let i = 0; i < n; i++) { num += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) ** 2; }
+  const slope = den === 0 ? 0 : num / den, icpt = my - slope * mx, pred = xs.map(x => slope * x + icpt);
+  const ssRes = ys.reduce((s, y, i) => s + (y - pred[i]) ** 2, 0), ssTot = ys.reduce((s, y) => s + (y - my) ** 2, 0);
+  return { slope, icpt, r2: ssTot === 0 ? 1 : 1 - ssRes / ssTot, next: slope * n + icpt };
+}
+const abc = items => { // items já em ordem decrescente de v
+  const total = sum(items, x => x.v) || 1; let cum = 0;
+  return items.map(x => { cum += x.v; const cp = cum / total * 100; return { ...x, pct: x.v / total * 100, cum: cp, cls: cp - x.v / total * 100 < 80 ? 'A' : (cp - x.v / total * 100 < 95 ? 'B' : 'C') }; });
+};
+const ymAdd = (ym, d) => { const [y, m] = ym.split('-').map(Number), dt = new Date(y, m - 1 + d, 1); return dt.getFullYear() + '-' + pad(dt.getMonth() + 1); };
+const WD = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const scopeEntries = () => { const sc = scopeSector(); return S.entries.filter(e => (!sc || e.sectorId === sc) && (sc || !S.f.sectorId || e.sectorId === S.f.sectorId)); };
+const mLong = ym => monthLabel(ym).replace(/^./, c => c.toLowerCase());
+const spk = t => String(t).replace(/(\d+)h(\d{2})/g, (m, h, mi) => `${h} ${+h === 1 ? 'hora' : 'horas'} e ${+mi} minutos`).replace(/(\d+)h\b/g, (m, h) => `${h} ${+h === 1 ? 'hora' : 'horas'}`)
+  .replace(/R\$\s?([\d.]+),(\d{2})/g, (m, r, c) => c === '00' ? `${r.replace(/\./g, '')} reais` : `${r.replace(/\./g, '')} reais e ${+c} centavos`).replace(/\s·\s/g, ', ');
+
+function analysis() {
+  const list = filtered(), all = scopeEntries(), a = { list, n: list.length };
+  a.totalMin = sum(list, e => e.min); a.people = new Set(list.map(e => e.empId)).size; a.snacks = sum(list, e => e.opcaoId ? e.qtd : 0); a.cost = sum(list, cost);
+  const rank = (f, nm) => [...groupBy(list, f)].map(([k, x]) => ({ k, l: nm(k), v: sum(x, e => e.min), n: x.length })).sort((p, q) => q.v - p.v);
+  a.bySector = rank(e => e.sectorId, sectorName); a.byEmp = rank(e => e.empId, empName); a.byReason = rank(e => e.reasonId, reasonText);
+  a.byDay = [...groupBy(list, e => e.date)].map(([k, x]) => ({ k, v: sum(x, e => e.min) })).sort((p, q) => q.v - p.v);
+  const wd = Array(7).fill(0); list.forEach(e => { wd[new Date(e.date + 'T12:00:00').getDay()] += e.min; }); a.wd = wd;
+  a.monthly = {}; all.forEach(e => { const m = e.date.slice(0, 7); a.monthly[m] = (a.monthly[m] || 0) + e.min; });
+  const months = Object.keys(a.monthly).sort(); a.months = months;
+  let cur = S.f.all ? months[months.length - 1] : S.f.month, prev = S.f.all ? months[months.length - 2] : ymAdd(S.f.month, -1);
+  a.cmp = (cur && prev && a.monthly[prev]) ? { cur, prev, curMin: a.monthly[cur] || 0, prevMin: a.monthly[prev], pct: ((a.monthly[cur] || 0) - a.monthly[prev]) / a.monthly[prev] * 100 } : null;
+  const nowYm = todayISO().slice(0, 7), day = +todayISO().slice(8);
+  if (!S.f.all && S.f.month === nowYm && day >= 5 && a.totalMin > 0) { const dim = new Date(+nowYm.slice(0, 4), +nowYm.slice(5), 0).getDate(); if (day < dim) a.proj = { pace: a.totalMin / day, total: a.totalMin / day * dim, day, dim }; }
+  const ser = months.slice(-6).map(m => a.monthly[m]); if (ser.length >= 4) { const r = linReg(ser); if (r.r2 >= 0.5) a.trend = { ...r, n: ser.length }; }
+  const dur = list.map(e => e.min).sort((p, q) => p - q);
+  if (dur.length >= 8) { const q1 = quantile(dur, .25), q3 = quantile(dur, .75), up = q3 + 1.5 * (q3 - q1); const o = list.filter(e => e.min > up); if (o.length) a.outliers = { up, list: o.sort((p, q) => q.min - p.min) }; }
+  a.abcReason = abc(a.byReason); a.abcEmp = abc(a.byEmp);
+  const lm = limMes(), ld = S.settings.limiteDia;
+  a.overMonth = (lm && !S.f.all) ? a.byEmp.filter(x => x.v > lm * 60) : [];
+  a.nearMonth = (lm && !S.f.all) ? a.byEmp.filter(x => x.v <= lm * 60 && x.v >= lm * 60 * limAviso() / 100) : [];
+  a.overDay = ld ? [...groupBy(list, e => e.empId + '|' + e.date)].filter(([, x]) => sum(x, e => e.min) > ld * 60).map(([k, x]) => ({ emp: empName(k.split('|')[0]), date: k.split('|')[1], v: sum(x, e => e.min) })) : [];
+  a.withSnack = list.filter(e => e.opcaoId).length; a.swapped = list.filter(e => e.trocado).length; a.apoio = list.filter(e => e.apoio).length; a.drafts = list.filter(e => e.status === 'rascunho').length;
+  return a;
+}
+const pc = v => Math.round(v) + '%';
+function insights(a) {
+  const out = [], m$ = showMoney(), I = (tone, title, text) => out.push({ tone, title, text });
+  if (!a.n) { I('info', 'Sem lançamentos no período', 'Escolha outro mês ou marque "Todo o período" para ver as análises.'); return out; }
+  I('info', 'Resumo do período', `Foram ${fmtH(a.totalMin)} líquidas em ${a.n} lançamentos, feitos por ${a.people} colaboradores. Cada lançamento teve em média ${fmtH(a.totalMin / a.n)}.`);
+  if (a.cmp) { const up = a.cmp.pct > 0.5, dn = a.cmp.pct < -0.5; I(up ? 'warn' : dn ? 'ok' : 'info', 'Comparação com o mês anterior', `${monthLabel(a.cmp.cur)} somou ${fmtH(a.cmp.curMin)}, contra ${fmtH(a.cmp.prevMin)} em ${mLong(a.cmp.prev)}. ${up ? 'Alta' : dn ? 'Queda' : 'Variação'} de ${pc(Math.abs(a.cmp.pct))}${!S.f.all && a.proj ? '. O mês ainda está em andamento, então a comparação final pode mudar' : ''}.`); }
+  if (a.proj) I('info', 'Projeção do fechamento', `No ritmo atual, de ${fmtH(a.proj.pace)} por dia do calendário, o mês deve fechar perto de ${fmtH(a.proj.total)}. É uma estimativa simples, sem considerar feriados ou picos.`);
+  if (a.trend) I(a.trend.slope > 0 ? 'warn' : 'ok', 'Tendência dos últimos meses', `Nos últimos ${a.trend.n} meses as horas ${a.trend.slope > 0 ? 'sobem' : 'caem'} cerca de ${fmtH(Math.abs(a.trend.slope))} por mês (ajuste de ${pc(a.trend.r2 * 100)}). Se o padrão continuar, o próximo mês fica perto de ${fmtH(Math.max(0, a.trend.next))}.`);
+  const nA = a.abcReason.filter(x => x.cls === 'A').length;
+  if (a.abcReason.length >= 3) I('info', 'Concentração dos motivos', `${nA} de ${a.abcReason.length} motivos respondem por 80% das horas: ${a.abcReason.filter(x => x.cls === 'A').map(x => x.l.replace(/\s*\(.*$/, '')).join(' e ')}. É onde agir primeiro.`);
+  if (a.bySector.length > 1) I('info', 'Setor que mais pesa', `${a.bySector[0].l} lidera com ${fmtH(a.bySector[0].v)}, ${pc(a.bySector[0].v / a.totalMin * 100)} do total. Em seguida vem ${a.bySector[1].l}, com ${fmtH(a.bySector[1].v)}.`);
+  const top = a.byEmp[0]; I('info', 'Quem mais fez hora extra', `${top.l} acumulou ${fmtH(top.v)} em ${top.n} lançamentos${a.byEmp[1] ? `, seguido de ${a.byEmp[1].l} com ${fmtH(a.byEmp[1].v)}` : ''}.`);
+  const wdTop = a.wd.indexOf(Math.max(...a.wd)); if (a.wd[wdTop] > 0 && a.n >= 5) I('info', 'Dia da semana mais carregado', `${WD[wdTop][0].toUpperCase() + WD[wdTop].slice(1)} concentra ${pc(a.wd[wdTop] / a.totalMin * 100)} das horas. Fim de semana responde por ${pc((a.wd[0] + a.wd[6]) / a.totalMin * 100)}.`);
+  if (a.outliers) I('warn', 'Lançamentos acima do normal', `${a.outliers.list.length} lançamentos passam de ${fmtH(a.outliers.up)}, bem acima do padrão. Vale conferir: ${a.outliers.list.slice(0, 3).map(e => `${empName(e.empId)} (${fmtDate(e.date)}, ${fmtH(e.min)})`).join('; ')}.`);
+  if (a.overMonth.length) I('warn', 'Acima do limite mensal', `${a.overMonth.length} colaboradores passaram de ${limMes()}h no mês: ${a.overMonth.slice(0, 4).map(x => `${x.l} (${fmtH(x.v)})`).join(', ')}${a.overMonth.length > 4 ? ' e outros' : ''}.`);
+  if (a.nearMonth.length) I('warn', 'Perto do teto mensal', `${a.nearMonth.length} colaboradores estão a partir de ${limAviso()}% do teto de ${limMes()}h: ${a.nearMonth.slice(0, 4).map(x => `${x.l} (${fmtH(x.v)})`).join(', ')}. Vale redistribuir as horas antes de estourar.`);
+  if (a.overDay.length) I('warn', 'Acima do limite diário', `${a.overDay.length} casos passaram de ${S.settings.limiteDia}h em um único dia${a.overDay.length ? ', por exemplo ' + a.overDay.slice(0, 2).map(x => `${x.emp} em ${fmtDate(x.date)} (${fmtH(x.v)})`).join(' e ') : ''}.`);
+  if (a.snacks) I('info', 'Lanches', `Foram ${a.snacks} lanches em ${a.withSnack} lançamentos (${pc(a.withSnack / a.n * 100)} do total)${m$ ? `, somando ${money(a.cost)}` : ''}.${a.swapped ? ` ${a.swapped} deles foram trocados fora da sugestão da regra.` : ''}`);
+  if (a.apoio) I('info', 'Apoio entre setores', `${a.apoio} lançamentos (${pc(a.apoio / a.n * 100)}) são de colaboradores que vieram de outro setor.`);
+  if (a.drafts) I('warn', 'Pendente de envio ao RH', `${a.drafts} lançamentos ainda estão como rascunho e não foram enviados ao RH.`);
+  else I('ok', 'Tudo enviado', 'Nenhum rascunho pendente neste período.');
+  return out;
+}
+const TONE = { info: ['Informação', ''], warn: ['Atenção', 't-warn'], ok: ['Em dia', 't-ok'] };
+
+/* ---------- explorar dados (modelagem livre: dimensão × medida × gráfico) ---------- */
+const DIMS = {
+  reason: { l: 'Motivo', key: e => e.reasonId, name: reasonText }, sector: { l: 'Setor', key: e => e.sectorId, name: sectorName }, emp: { l: 'Colaborador', key: e => e.empId, name: empName },
+  snack: { l: 'Opção de lanche', key: e => e.opcaoId || '', name: id => id ? snackName(id) : 'Sem lanche' }, by: { l: 'Lançado por', key: e => e.by || '—', name: x => x },
+  status: { l: 'Situação', key: e => e.status, name: x => x === 'enviado' ? 'Enviado ao RH' : 'Rascunho' },
+  weekday: { l: 'Dia da semana', ord: true, key: e => new Date(e.date + 'T12:00:00').getDay(), name: i => WD[i].split('-')[0].replace(/^./, c => c.toUpperCase()).slice(0, 3), order: [1, 2, 3, 4, 5, 6, 0] },
+  month: { l: 'Mês', ord: true, key: e => e.date.slice(0, 7), name: m => MES3[+m.slice(5) - 1] + '/' + m.slice(2, 4) }, day: { l: 'Dia', ord: true, key: e => e.date, name: d => String(+d.slice(8)) }
+};
+const METRICS = { min: { l: 'Horas líquidas', f: fmtH, v: e => e.min, c: v => v / 60 }, n: { l: 'Nº de lançamentos', f: v => String(v), v: () => 1 }, snack: { l: 'Lanches', f: v => String(v), v: e => e.opcaoId ? e.qtd : 0 }, cost: { l: 'Custo dos lanches', f: money, v: cost, money: true } };
+S.ex = { dim: 'reason', metric: 'min', chart: 'auto', top: 10 };
+function exploreData() {
+  const x = S.ex, D = DIMS[x.dim], M = METRICS[x.metric], list = filtered();
+  let rows = [...groupBy(list, D.key)].map(([k, a]) => ({ k, l: String(D.name(k)), v: sum(a, M.v) }));
+  if (D.ord) { rows.sort((p, q) => D.order ? D.order.indexOf(+p.k) - D.order.indexOf(+q.k) : String(p.k).localeCompare(String(q.k))); }
+  else rows.sort((p, q) => q.v - p.v);
+  return { D, M, rows };
+}
+function curveSVG(items) {
+  const W = 480, H = 170, L = 34, R = 10, T = 12, B = 22, iw = W - L - R, ih = H - T - B, n = items.length, x = i => L + (n === 1 ? iw / 2 : i * iw / (n - 1)), y = p => T + ih - p / 100 * ih;
+  const pts = items.map((it, i) => `${x(i).toFixed(1)},${y(it.cum).toFixed(1)}`).join(' ');
+  const cl = { A: 'var(--c1)', B: 'var(--c2)', C: 'var(--c6)' };
+  const grid = [0, 50, 80, 100].map(p => `<line x1="${L}" x2="${W - R}" y1="${y(p).toFixed(1)}" y2="${y(p).toFixed(1)}" class="gl" ${p === 80 ? 'stroke-dasharray="4 3"' : ''}/><text x="${L - 5}" y="${(y(p) + 4).toFixed(1)}" text-anchor="end" class="ax">${p}%</text>`).join('');
+  const step = Math.max(1, Math.ceil(n / 12));
+  return `<svg class="col" viewBox="0 0 ${W} ${H}" role="img" aria-label="Curva acumulada (Pareto)">${grid}<polyline class="ln" stroke="var(--fg)" style="stroke-width:1.5" points="${pts}"/>${items.map((it, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(it.cum).toFixed(1)}" r="4" fill="${cl[it.cls]}"><title>${esc(it.l)}: ${pc(it.cum)} acumulado</title></circle>`).join('')}${items.map((it, i) => i % step === 0 ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="ax">${i + 1}</text>` : '').join('')}</svg>`;
+}
+function explorerHTML() {
+  const { D, M, rows } = exploreData(), x = S.ex, fmt = M.f;
+  const sels = `<div class="filters" style="margin-bottom:12px">
+    <label class="fld">Agrupar por<select data-ex="dim">${Object.entries(DIMS).map(([k, d]) => `<option value="${k}" ${x.dim === k ? 'selected' : ''}>${d.l}</option>`).join('')}</select></label>
+    <label class="fld">Medir<select data-ex="metric">${Object.entries(METRICS).filter(([k, m]) => !m.money || showMoney()).map(([k, m]) => `<option value="${k}" ${x.metric === k ? 'selected' : ''}>${m.l}</option>`).join('')}</select></label>
+    <label class="fld">Gráfico<select data-ex="chart">${(D.ord ? [['auto', 'Automático'], ['col', 'Colunas'], ['line', 'Linha']] : [['auto', 'Automático'], ['bar', 'Barras'], ['donut', 'Rosca']]).map(([k, l]) => `<option value="${k}" ${x.chart === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    ${D.ord ? '' : `<label class="fld">Mostrar<select data-ex="top">${[5, 10, 20, 50].map(k => `<option value="${k}" ${+x.top === k ? 'selected' : ''}>${k} primeiros</option>`).join('')}</select></label>`}</div>`;
+  if (!rows.length || !sum(rows, r => r.v)) return sels + '<div class="empty">Sem dados para esta combinação no período.</div>';
+  let body;
+  if (D.ord) {
+    const kind = x.chart === 'auto' ? (x.dim === 'day' || x.dim === 'month' ? 'line' : 'col') : x.chart;
+    const pts = rows.map(r => ({ label: r.l, v: M.c ? M.c(r.v) : r.v }));
+    body = (kind === 'line' && rows.length > 1) ? lineChart(rows.map(r => r.l), [{ name: M.l, color: 'var(--c1)', vals: pts.map(p => p.v) }], M.l + ' por ' + D.l.toLowerCase()) : colChart(pts, M.l + ' por ' + D.l.toLowerCase());
+    if (x.metric !== 'min') body = body.replace(/(\d+(?:,\d)?)h<\/text>/g, '$1</text>');
+    const tot = sum(rows, r => r.v), best = rows.reduce((p, q) => q.v > p.v ? q : p);
+    return sels + body + `<p class="muted small" style="margin-top:8px">Maior valor: <b>${esc(best.l)}</b> (${fmt(best.v)}, ${pc(best.v / tot * 100)} do total).</p>`;
+  }
+  const top = +x.top, cl = abc(rows), shown = cl.slice(0, top), rest = cl.slice(top), total = sum(rows, r => r.v);
+  const nA = cl.filter(r => r.cls === 'A').length, sumCls = c => sum(cl.filter(r => r.cls === c), r => r.v);
+  const badge = (c, col) => `<div class="abc"><b style="color:${col}">Classe ${c}</b><span>${cl.filter(r => r.cls === c).length} ${cl.filter(r => r.cls === c).length === 1 ? 'item' : 'itens'}</span><strong>${fmt(sumCls(c))}</strong><small>${pc(sumCls(c) / total * 100)} do total</small></div>`;
+  const kind = x.chart === 'auto' ? (cl.length <= 6 ? 'donut' : 'bar') : x.chart;
+  const chart = kind === 'donut' ? donut((rest.length ? [...shown.slice(0, 5), { l: 'Outros', v: sum(cl.slice(5), r => r.v) }] : shown).filter(r => r.v > 0).slice(0, 6), total, fmt, M.l) : barList(shown.map(r => ({ l: r.l, v: r.v })), { fmt });
+  body = `<p class="muted small">${nA} de ${cl.length} itens (${pc(nA / cl.length * 100)}) respondem por 80% do total (curva ABC).</p><div class="abcs">${badge('A', 'var(--ok)')}${badge('B', 'var(--warn)')}${badge('C', 'var(--muted)')}</div>
+    <div class="exgrid"><div class="exc">${chart}</div><div class="exc"><h2 style="font-size:.85rem">Curva acumulada</h2>${curveSVG(shown)}</div></div>
+    <div class="tblwrap" style="margin-top:10px"><table class="tbl"><thead><tr><th>#</th><th>Classe</th><th>${D.l}</th><th class="num">${M.l}</th><th class="num">%</th><th class="num">Acumulado</th></tr></thead><tbody>${shown.map((r, i) => `<tr><td data-label="#">${i + 1}</td><td data-label="Classe"><span class="tag ${r.cls === 'A' ? 't-ok' : r.cls === 'B' ? 't-warn' : ''}">${r.cls}</span></td><td data-label="${D.l}">${esc(r.l)}</td><td data-label="${M.l}" class="num">${fmt(r.v)}</td><td data-label="%" class="num">${r.pct.toFixed(1).replace('.', ',')}%</td><td data-label="Acumulado" class="num">${r.cum.toFixed(1).replace('.', ',')}%</td></tr>`).join('')}</tbody></table></div>
+    ${rest.length ? `<p class="muted small">Mais ${rest.length} itens fora desta lista (${pc(sum(rest, r => r.v) / total * 100)} do total).</p>` : ''}`;
+  return sels + body;
+}
+
+/* ---------- calendário de calor ---------- */
+function heatHTML() {
+  const all = scopeEntries(), years = [...new Set(all.map(e => +e.date.slice(0, 4)))].sort(); if (!years.length) return '<div class="empty">Sem lançamentos para desenhar o calendário.</div>';
+  const yr = years.includes(S.heatYear) ? S.heatYear : (years.includes(+S.f.month.slice(0, 4)) ? +S.f.month.slice(0, 4) : years[years.length - 1]); S.heatYear = yr;
+  const by = {}; all.forEach(e => { if (+e.date.slice(0, 4) === yr) by[e.date] = (by[e.date] || 0) + e.min; });
+  const max = Math.max(...Object.values(by), 1), lvl = v => !v ? 0 : v / max > .75 ? 4 : v / max > .5 ? 3 : v / max > .25 ? 2 : 1;
+  const start = new Date(yr, 0, 1); start.setDate(start.getDate() - start.getDay()); const weeks = [], ml = {}; let d = new Date(start);
+  for (let w = 0; w < 53; w++) { const wk = []; for (let i = 0; i < 7; i++) { const iso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, inY = d.getFullYear() === yr; if (inY && d.getDate() <= 7 && i === 0) ml[w] = MES3[d.getMonth()]; wk.push({ iso, inY, v: by[iso] || 0 }); d.setDate(d.getDate() + 1); } weeks.push(wk); }
+  return `<div class="filters" style="margin-bottom:10px"><label class="fld">Ano<select data-heat="year">${years.map(y => `<option ${y === yr ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
+    <span class="muted small" style="align-self:center">Quanto mais escura a célula, mais horas extras naquele dia. Passe o mouse para ver o valor.</span></div>
+    <div class="heatscroll"><div class="heatmo">${weeks.map((_, w) => `<span>${ml[w] || ''}</span>`).join('')}</div>
+    <div class="heat">${weeks.map(wk => `<div>${wk.map(c => `<i class="hc l${c.inY ? lvl(c.v) : 'x'}" title="${c.inY ? fmtDate(c.iso) + ': ' + (c.v ? fmtH(c.v) : 'sem horas') : ''}"></i>`).join('')}</div>`).join('')}</div></div>
+    <div class="heatleg"><span>menos</span>${[0, 1, 2, 3, 4].map(l => `<i class="hc l${l}"></i>`).join('')}<span>mais</span></div>`;
+}
+
+/* ---------- tela Análises ---------- */
+function vAnalysis() {
+  const a = analysis(), ins = insights(a);
+  $('#view').innerHTML = `<div class="pagehead"><h1>Análises</h1><span class="muted">${esc(periodLabel())} · ${esc(scopeLabel())}</span><span class="sp"></span><span class="noprint toolbar">${ibtn('narr-start', 'speaker', 'Ouvir análise')}${ibtn('print-analysis', 'print', 'PDF')}</span></div>
+    ${filterBar()}
+    <section class="panel" data-sec="insights"><h2>O que os dados dizem</h2><div class="insgrid">${ins.map((x, i) => `<article class="ins" data-ins="${i}"><span class="tag ${TONE[x.tone][1]}">${TONE[x.tone][0]}</span><h3>${esc(x.title)}</h3><p>${esc(x.text)}</p></article>`).join('')}</div></section>
+    <section class="panel" data-sec="explorer"><h2>Explorar os dados</h2><p class="muted small">Escolha como agrupar e o que medir. Gráfico e curva ABC se atualizam sozinhos e respeitam o mês e o setor do filtro acima.</p><div id="explorer">${explorerHTML()}</div></section>
+    <section class="panel" data-sec="heat"><h2>Calendário de calor</h2><div id="heat">${heatHTML()}</div></section>`;
+}
+function printAnalysis() {
+  const a = analysis(), ins = insights(a);
+  printReport({ title: 'Análises de horas extras', sub: `${periodLabel()} · ${scopeLabel()}`, pre: `<div class="insgrid">${ins.map(x => `<article class="ins"><span class="tag ${TONE[x.tone][1]}">${TONE[x.tone][0]}</span><h3>${esc(x.title)}</h3><p>${esc(x.text)}</p></article>`).join('')}</div><div class="panel">${explorerHTML().replace(/<div class="filters"[\s\S]*?<\/div>\s*(?=<)/, '')}</div>` });
+}
+function printDash() {
+  const k = $('#view .kpis'), g = $('#view .grid2');
+  printReport({ title: 'Painel de horas extras', sub: `${periodLabel()} · ${scopeLabel()}`, pre: (k ? k.outerHTML : '') + (g ? g.outerHTML : '') });
+}
+
+/* ================================================================================
+   NARRAÇÃO POR VOZ (motor do DataViz Pro: vozes pt-BR, legenda palavra a palavra, destaque do bloco)
+   ================================================================================ */
+const NARR = { segs: [], i: -1, playing: false };
+const VOICE_KEY = 'he_voice';
+const voiceList = () => { if (!window.speechSynthesis) return []; const v = speechSynthesis.getVoices(); return [...v.filter(x => /pt[-_]br/i.test(x.lang)), ...v.filter(x => !/pt[-_]br/i.test(x.lang))]; };
+const isThalita = v => !!v && /thalita/i.test(v.name) && /(natural|online)/i.test(v.name);
+const pickVoice = vs => vs.find(isThalita) || vs.find(v => /thalita/i.test(v.name)) || vs.find(v => /(natural|online)/i.test(v.name) && /pt[-_]br/i.test(v.lang)) || vs.find(v => /pt[-_]br/i.test(v.lang)) || vs[0] || null;
+function savedVoice() { try { return localStorage.getItem(VOICE_KEY); } catch (e) { return null; } }
+function fillVoices() {
+  const sel = $('#narr-voice'); if (!sel) return; const vs = voiceList();
+  if (!vs.length) { sel.innerHTML = '<option value="">Sem vozes neste navegador</option>'; return; }
+  sel.innerHTML = vs.map(v => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+  const ch = vs.find(v => v.name === savedVoice()) || pickVoice(vs); if (ch) sel.value = ch.name;
+}
+const chosenVoice = () => { const vs = voiceList(), n = ($('#narr-voice') || {}).value || savedVoice(); return vs.find(v => v.name === n) || pickVoice(vs); };
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = fillVoices;
+const clearNarr = () => $$('.narrating-block').forEach(el => el.classList.remove('narrating-block'));
+function caption(text, ci) {
+  const el = $('#narr-caption'); if (!el) return; if (ci == null) { el.textContent = text; return; }
+  let html = '', m; const re = /\S+/g; while ((m = re.exec(text)) !== null) { const on = ci >= m.index && ci < m.index + m[0].length; html += (on ? `<span class="narr-word">${esc(m[0])}</span>` : esc(m[0])) + ' '; } el.innerHTML = html.trim();
+}
+const cardText = el => { const c = el.cloneNode(true); c.querySelectorAll('button').forEach(b => b.remove()); const g = s => (c.querySelector(s)?.textContent || '').trim(); return [g('.kl'), g('.kn'), g('.ks')]; };
+function narrSegments() {
+  const a = analysis(), ins = insights(a), segs = [], V = '#view', S_ = (text, el) => segs.push({ text, el: typeof el === 'string' ? $(el) : el });
+  const where = `${periodLabel()}, ${scopeLabel() === 'Todos os setores' ? 'todos os setores' : 'setor ' + scopeLabel()}`;
+  const cards = sel => $$(sel).forEach(c => { const [l, n, s] = cardText(c); if (l) S_(spk(`${l}: ${n}. ${s}`.replace(/\.\s*\.$/, '.')), c); });
+  const tail = () => S_('Fim do resumo. Use os botões para ouvir de novo ou fechar.', null);
+  if (!a.n && S.view !== 'entries') { S_(`Não há lançamentos em ${where}. Escolha outro período para ouvir a análise.`, V); return segs; }
+  if (S.view === 'dashboard') {
+    S_(`Resumo do painel. ${where}.`, '#view .kpis'); cards('#view .kpis .kpi');
+    const sec = (id, t) => { const el = $(`[data-sec="${id}"]`); if (el && t) S_(spk(t), el); };
+    const best = a.byDay[0]; if (best) sec('dia', `Nos dias, o mais pesado foi ${S.f.all ? fmtDate(best.k) : 'o dia ' + +best.k.slice(8)}, com ${fmtH(best.v)}.`);
+    if (a.bySector.length) sec('setor', `O setor com mais horas é ${a.bySector[0].l}, com ${fmtH(a.bySector[0].v)}, ${pc(a.bySector[0].v / a.totalMin * 100)} do total.`);
+    if (a.snacks) { const sn = [...groupBy(a.list.filter(e => e.opcaoId), e => e.opcaoId)].map(([k, x]) => [snackName(k), sum(x, e => e.qtd)]).sort((p, q) => q[1] - p[1])[0]; sec('lanches', `Foram ${a.snacks} lanches. O mais pedido foi ${sn[0]}, com ${sn[1]} unidades.`); }
+    if (a.byReason.length) sec('gargalos', `O principal gargalo é ${a.byReason[0].l.replace(/\s*\(.*$/, '')}, com ${fmtH(a.byReason[0].v)}, ${pc(a.byReason[0].v / a.totalMin * 100)} das horas.`);
+    { const t = teto(); if (t && (t.over.length || t.near.length)) sec('teto', `Teto mensal de ${t.L} horas: ${t.over.length} pessoas no limite ou acima e ${t.near.length} perto, a partir de ${t.A} por cento.`); }
+    sec('pessoas', `Quem mais fez hora extra: ${a.byEmp.slice(0, 3).map(x => `${x.l}, ${fmtH(x.v)}`).join('; ')}.`);
+    ins.filter(x => x.tone === 'warn').slice(0, 3).forEach(x => S_(spk(`${x.title}. ${x.text}`), V));
+  } else if (S.view === 'entries') {
+    const rows = entryRows(); S_(spk(`Lista de lançamentos. ${where}. São ${rows.length} lançamentos, somando ${fmtH(sum(rows, e => e.min))}.`), '#tbl');
+    const d = rows.filter(e => e.status === 'rascunho').length; if (d) S_(`${d} deles ainda estão como rascunho e não foram enviados ao RH.`, '#tbl');
+  } else if (S.view === 'reports') {
+    const r = buildReport(S.rep); S_(`Relatório: ${REPORTS[S.rep]}. ${where}.`, '#view .rcards'); cards('#view .rcards .kpi');
+    const lead = { colab: 'colaborador', setor: 'setor', motivo: 'motivo', dia: 'dia', lanche: 'opção' }[S.rep], vi = S.rep === 'lanche' ? 1 : r.types.indexOf('h');
+    r.rows.slice(0, 3).forEach((x, i) => S_(spk(`${['Primeiro', 'Segundo', 'Terceiro'][i]} ${lead}: ${S.rep === 'dia' ? fmtDate(x[0]) : String(x[0]).replace(/\s*\(.*$/, '')}, com ${S.rep === 'lanche' ? x[1] + ' unidades' : fmtH(x[vi])}.`), $('#view table')));
+  } else if (S.view === 'analysis') {
+    S_(`Análises. ${where}. Vou ler os principais pontos.`, '[data-sec="insights"]');
+    ins.forEach((x, i) => S_(spk(`${x.title}. ${x.text}`), $(`[data-ins="${i}"]`)));
+    const { D, M, rows } = exploreData(); if (rows.length) { const best = rows.reduce((p, q) => q.v > p.v ? q : p); S_(spk(`No explorador, agrupando ${D.l.toLowerCase()} e medindo ${M.l.toLowerCase()}, o maior valor é ${best.l}, com ${M.f(best.v)}.`), '[data-sec="explorer"]'); }
+    const hd = a.byDay[0]; if (hd) S_(spk(`No calendário de calor, o dia mais intenso foi ${fmtDate(hd.k)}, com ${fmtH(hd.v)}.`), '[data-sec="heat"]');
+  } else { S_('Não há resumo por voz para esta tela.', null); }
+  tail(); return segs;
+}
+function narrStart() {
+  if (!window.speechSynthesis) return toast('Este navegador não tem suporte a narração por voz.');
+  if (S.view === 'settings') return toast('A narração está disponível no Painel, Lançamentos, Relatórios e Análises.');
+  fillVoices(); NARR.segs = narrSegments(); NARR.i = -1; $('#narrator').hidden = false; narrNext();
+}
+function narrSpeak() {
+  const s = NARR.segs[NARR.i]; if (!s) return; clearNarr();
+  if (s.el) { s.el.classList.add('narrating-block'); s.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  caption(s.text); $('#narr-progress').textContent = `${NARR.i + 1}/${NARR.segs.length}`;
+  speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(s.text), v = chosenVoice();
+  try { if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'pt-BR'; } catch (e) { u.lang = 'pt-BR'; }
+  u.rate = parseFloat($('#narr-speed').value || '1'); u.onboundary = ev => caption(s.text, ev.charIndex); u.onend = () => { if (NARR.playing) narrNext(); };
+  u.onerror = ev => { if (ev.error === 'interrupted' || ev.error === 'canceled') return; caption(s.text + ' (este navegador não conseguiu falar o texto; a legenda segue na tela)'); NARR.playing = false; narrIcon(false); };
+  NARR.playing = true; narrIcon(true); try { speechSynthesis.speak(u); } catch (e) { caption('Não foi possível iniciar a narração neste navegador.'); NARR.playing = false; narrIcon(false); }
+}
+function narrNext() { if (NARR.i + 1 >= NARR.segs.length) return narrStop(); NARR.i++; narrSpeak(); }
+function narrPrev() { if (NARR.i <= 0) return; NARR.i--; narrSpeak(); }
+function narrPlay() {
+  if (!window.speechSynthesis) return;
+  if (speechSynthesis.speaking && !speechSynthesis.paused) { speechSynthesis.pause(); NARR.playing = false; narrIcon(false); }
+  else if (speechSynthesis.paused) { speechSynthesis.resume(); NARR.playing = true; narrIcon(true); }
+  else { NARR.playing = true; narrSpeak(); }
+}
+const narrIcon = on => { const b = $('#narr-play'); if (b) { b.innerHTML = ic(on ? 'pause' : 'play'); b.setAttribute('aria-label', on ? 'Pausar' : 'Continuar'); } };
+function narrStop() { if (window.speechSynthesis) speechSynthesis.cancel(); NARR.playing = false; clearNarr(); const b = $('#narrator'); if (b) b.hidden = true; }
+
+/* ================= importar lançamentos (CSV) ================= */
+const unq = s => s.replace(/^'(?=[=+\-@\t\r])/, '');
+function parseDateStr(s) {
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return m[0].slice(0, 10);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;
+  return '';
+}
+const parseTimeStr = s => { const m = s.match(/^(\d{1,2}):(\d{2})/); return m && +m[1] < 24 && +m[2] < 60 ? `${pad(m[1])}:${m[2]}` : ''; };
+async function importFile(file) {
+  if (!file) return;
+  let rows; try { rows = parseCSV(await file.text()); } catch (e) { return toast('Não foi possível ler o arquivo.'); }
+  const info = (title, body) => confirmDlg({ title, body, ok: 'Fechar', cancel: false });
+  if (rows.length < 2) return info('Arquivo vazio', '<p>O CSV não tem linhas de dados.</p>');
+  const H = rows[0].map(norm), ix = n => H.indexOf(n);
+  const c = { id: ix('id'), date: ix('data'), sec: ix('setor'), emp: ix('colaborador'), apoio: ix('apoio'), reason: ix('motivo'), outro: ix('motivo_outro'), start: ix('inicio'), end: ix('fim'), ii: ix('intervalo_inicio'), ifm: ix('intervalo_fim'), h: ix('horas_liquidas'),
+    snack: ix('lanche'), qtd: ix('quantidade'), preco: ix('preco_unitario'), obs: ix('observacao'), troc: ix('trocado'), status: ix('status'), by: ix('lancado_por'), cr: ix('criado_em'), up: ix('atualizado_em') };
+  const miss = []; if (c.date < 0) miss.push('data'); if (c.sec < 0) miss.push('setor'); if (c.emp < 0) miss.push('colaborador'); if (c.reason < 0) miss.push('motivo'); if (c.start < 0 || c.end < 0) miss.push('inicio e fim');
+  if (miss.length) return info('Colunas ausentes', `<p>O arquivo precisa ter as colunas: <b>${miss.join(', ')}</b>. Use o CSV exportado por este sistema como modelo.</p>`);
+  const secMap = new Map(S.sectors.map(d => [norm(d.nome), d])), empMap = new Map(S.employees.map(e => [e.sectorId + '|' + norm(e.nome), e])), reaMap = new Map(S.reasons.map(r => [norm(r.nome), r])), snMap = new Map(S.snacks.map(o => [norm(o.nome), o]));
+  const existing = new Map(S.entries.map(e => [e.id, e])), newS = [], newE = [], newR = [], newO = [], add = [], upd = [], errors = []; let skipped = 0; const now = new Date().toISOString();
+  rows.slice(1).forEach((r, i) => {
+    const g = k => c[k] >= 0 ? (r[c[k]] || '').trim() : '', ln = i + 2, date = parseDateStr(g('date')), sn = unq(g('sec')), en = unq(g('emp')), rn = unq(g('reason')), start = parseTimeStr(g('start')), end = parseTimeStr(g('end'));
+    if (!date) return errors.push(`Linha ${ln}: data inválida.`);
+    if (!sn || !en) return errors.push(`Linha ${ln}: setor ou colaborador em branco.`);
+    if (!rn) return errors.push(`Linha ${ln}: motivo em branco.`);
+    const bruta = durMin(start, end); if (!start || !end || !bruta) return errors.push(`Linha ${ln}: horários inválidos.`);
+    let min = g('h') ? Math.round(parseNum(g('h')) * 60) : bruta; if (!(min > 0 && min <= bruta)) min = bruta;
+    let s = secMap.get(norm(sn)); if (!s) { s = { id: uid(), nome: sn }; secMap.set(norm(sn), s); newS.push(s); }
+    let e = empMap.get(s.id + '|' + norm(en)); if (!e) { e = { id: uid(), nome: en, sectorId: s.id, ativo: true }; empMap.set(s.id + '|' + norm(en), e); newE.push(e); }
+    let rs = reaMap.get(norm(rn)); if (!rs) { rs = { id: uid(), nome: rn }; reaMap.set(norm(rn), rs); newR.push(rs); }
+    let oid = '', qtd = 0, preco = 0; const on = unq(g('snack'));
+    if (on) { let o = snMap.get(norm(on)); if (!o) { o = { id: uid(), nome: on, preco: parseNum(g('preco')) }; snMap.set(norm(on), o); newO.push(o); } oid = o.id; qtd = Math.max(1, parseInt(g('qtd')) || 1); preco = g('preco') ? parseNum(g('preco')) : o.preco; }
+    const st = norm(g('status')), hasInt = !!(parseTimeStr(g('ii')) && parseTimeStr(g('ifm')));
+    const rec = { id: g('id') || uid(), date, sectorId: s.id, empId: e.id, apoio: norm(g('apoio')) === 'sim', reasonId: rs.id, reasonOutro: unq(g('outro')), start, end, hasInt, intIni: hasInt ? parseTimeStr(g('ii')) : '', intFim: hasInt ? parseTimeStr(g('ifm')) : '',
+      bruta, inter: bruta - min, min, opcaoId: oid, qtd, preco, obs: unq(g('obs')), trocado: norm(g('troc')) === 'sim', status: st === 'rascunho' ? 'rascunho' : 'enviado', by: unq(g('by')) || S.me.nome, createdAt: g('cr') || now, updatedAt: g('up') || now };
+    const ex = existing.get(rec.id);
+    if (!ex) add.push(rec); else if (rec.updatedAt > (ex.updatedAt || '')) upd.push(rec); else skipped++;
+  });
+  const created = newS.length + newE.length + newR.length + newO.length;
+  const ok = await confirmDlg({ title: 'Importar CSV?', ok: 'Importar', body: `<p><b>${add.length}</b> novos · <b>${upd.length}</b> atualizados · <b>${skipped}</b> já existentes (ignorados) · <b>${errors.length}</b> com erro.</p>
+    ${created ? `<p>Serão criados ${newS.length} setores, ${newE.length} colaboradores, ${newR.length} motivos e ${newO.length} opções de lanche.</p>` : ''}
+    ${errors.length ? `<p class="err">${errors.slice(0, 5).map(esc).join('<br>')}${errors.length > 5 ? '<br>…' : ''}</p>` : ''}` });
+  if (!ok || !(add.length || upd.length)) return;
+  await DB.putMany('sectors', newS); await DB.putMany('employees', newE); await DB.putMany('reasons', newR); await DB.putMany('snacks', newO); await DB.putMany('entries', [...add, ...upd]);
+  for (const s of ['sectors', 'employees', 'reasons', 'snacks', 'entries']) await reload(s);
+  await log('Importou CSV', `${add.length} novos, ${upd.length} atualizados (${file.name})`); renderView(); toast('Importação concluída.');
+}
+
+/* ================= configuração e backup (JSON) ================= */
+async function exportJSON(kind) {
+  const cfg = { versao: 2, tipo: kind, geradoEm: new Date().toISOString() };
+  for (const s of CONFIG_STORES) cfg[s] = S[s];
+  cfg.settings = S.settings; if (kind === 'backup') cfg.entries = S.entries;
+  downloadBlob(`${kind === 'backup' ? 'backup' : 'configuracao'}-he-lanche-${todayISO()}.json`, JSON.stringify(cfg), 'application/json');
+  toast(kind === 'backup' ? 'Backup baixado.' : 'Configuração exportada. Envie aos líderes.');
+}
+async function importJSON(file, { fromLogin = false } = {}) {
+  if (!file) return;
+  let j; try { j = JSON.parse(await file.text()); } catch (e) { return toast('Arquivo inválido.'); }
+  if (!j || j.versao !== 2 || !Array.isArray(j.users) || !Array.isArray(j.sectors)) return toast('Esse arquivo não é uma configuração deste sistema.');
+  const withEntries = Array.isArray(j.entries);
+  const ok = await confirmDlg({ title: withEntries ? 'Restaurar backup?' : 'Importar configuração?', danger: true, ok: withEntries ? 'Restaurar' : 'Importar',
+    body: `<p>${withEntries ? `Substitui <b>tudo</b> deste dispositivo, inclusive os ${S.entries.length} lançamentos atuais.` : 'Substitui usuários, setores, colaboradores, lanches, motivos, regras e switches deste dispositivo. Os lançamentos ficam como estão.'}</p><p class="muted small">Você precisará entrar de novo.</p>` });
+  if (!ok) return;
+  for (const s of CONFIG_STORES) { await DB.clear(s); await DB.putMany(s, j[s] || []); }
+  await DB.put('settings', { key: 'cfg', ...(j.settings || {}) });
+  if (withEntries) { await DB.clear('entries'); await DB.putMany('entries', j.entries); }
+  await loadAll(); try { sessionStorage.removeItem('he_uid'); } catch (e) {} S.me = null; render(); toast(fromLogin || !withEntries ? 'Configuração importada. Faça login.' : 'Backup restaurado. Faça login.');
+}
+
+/* ================= eventos ================= */
+const ACT = {
+  nav: el => { narrStop(); S.view = el.dataset.v; S.edit = null; renderShell(); window.scrollTo(0, 0); },
+  logout,
+  
+  'goto-draft': () => { S.view = 'entries'; S.f.status = 'rascunho'; renderShell(); },
+  'new-entry': () => openEntry(),
+  edit: el => openEntry(el.dataset.id),
+  del: async el => {
+    const e = S.entries.find(x => x.id === el.dataset.id); if (!e) return;
+    if (await confirmDlg({ title: 'Excluir lançamento?', danger: true, ok: 'Excluir', body: `<p>${esc(empName(e.empId))} · ${fmtDate(e.date)} · ${fmtH(e.min)}</p>` })) {
+      await DB.del('entries', e.id); await reload('entries'); await log('Excluiu lançamento', `${empName(e.empId)} em ${fmtDate(e.date)}`); renderView(); toast('Lançamento excluído.');
+    }
+  },
+  'send-rh': async () => {
+    const ids = $$('.chk-env:checked').map(c => c.dataset.id);
+    if (!ids.length) return toast('Marque ao menos um rascunho na lista.');
+    if (await confirmDlg({ title: 'Enviar ao RH?', ok: 'Enviar', body: `<p>${ids.length} lançamento(s) serão enviados. Depois de enviados, o setor não consegue mais editar ou excluir.</p>` })) { await setStatus(ids, 'enviado'); toast('Enviado ao RH.'); }
+  },
+  reopen: async el => { if (await confirmDlg({ title: 'Reabrir lançamento?', ok: 'Reabrir', body: '<p>Volta para rascunho e o setor poderá editar de novo.</p>' })) setStatus([el.dataset.id], 'rascunho'); },
+  'dlg-close': closeDlg,
+  'qa-open': el => {
+    if (el.dataset.kind === 'emp') { $('#empNew').hidden = false; $('#empNewName').focus(); return; }
+    const p = el.closest('.fld').querySelector('[data-qa]'); p.hidden = false; p.querySelector('input').focus();
+  },
+  'qa-cancel': el => { el.closest('[data-qa]').hidden = true; },
+  'qa-save': el => quickSave(el.dataset.kind, el),
+  'emp-new-cancel': () => { $('#empNew').hidden = true; },
+  'emp-new-save': saveNewEmp,
+  'chip-x': el => { S.draft.emps = S.draft.emps.filter(i => i !== el.dataset.id); renderEmpPick(); entryChanged(); },
+  'swap-snack': () => { const s = ef().opcaoId; if (!s) return; S.draft.touched = true; s.focus(); toast('Troca livre: escolha a opção desejada.'); },
+  'export-entries': () => exportEntries(entryRows(), `horas-extras-${S.f.all ? 'todos' : S.f.month}`),
+  'export-xlsx': () => exportEntries(entryRows(), `horas-extras-${S.f.all ? 'todos' : S.f.month}`, true),
+  'print-entries': printEntries, 'blank-open': openBlank, 'toggle-theme': () => { setTheme(getTheme() === 'dark' ? 'light' : 'dark'); render(); },
+  'export-all': () => exportEntries(S.entries, `horas-extras-completo-${todayISO()}`),
+  'export-all-xlsx': () => exportEntries(S.entries, `horas-extras-completo-${todayISO()}`, true),
+  'export-report': exportReport, 'print-report': printReportView,
+  'export-config': () => exportJSON('config'), 'export-backup': () => exportJSON('backup'),
+  'cfg-tab': el => { S.tab = el.dataset.v; S.edit = null; renderView(); },
+  'crud-edit': el => { S.edit = { tab: S.tab, id: el.dataset.id }; renderCrud(S.tab); window.scrollTo(0, 0); },
+  'crud-cancel': () => { S.edit = null; renderCrud(S.tab); },
+  'crud-del': async el => {
+    const c = CRUD[S.tab], r = c.items().find(x => x.id === el.dataset.id); if (!r) return;
+    const why = c.canDelete(r); if (why) return toast(why);
+    if (await confirmDlg({ title: `Excluir ${c.noun}?`, danger: true, ok: 'Excluir', body: `<p>${esc(r.nome || descRegraCurta(r))}</p>` })) {
+      await DB.del(S.tab, r.id); await reload(S.tab); await log(`Excluiu ${c.noun}`, r.nome || ''); renderView(); toast('Excluído.');
+    }
+  },
+  'reset-open': resetDialog,
+  'demo-regen': async () => {
+    if (MODE !== 'demo') return;
+    if (await confirmDlg({ title: 'Gerar dados simulados de novo?', ok: 'Gerar', danger: true, body: '<p>Apaga tudo da base de demonstração e cria novos dados fictícios. Os dados reais não são tocados.</p>' })) {
+      for (const st of Object.keys(STORES)) await DB.clear(st); setMode('demo');
+    }
+  },
+  'narr-start': narrStart, 'narr-prev': narrPrev, 'narr-next': narrNext, 'narr-play': narrPlay, 'narr-stop': narrStop,
+  'limit-open': openLimit, 'print-dash': printDash, 'print-analysis': printAnalysis
+};
+document.addEventListener('click', e => { const el = e.target.closest('[data-act]'); if (!el || !ACT[el.dataset.act]) return; if (el.type !== 'checkbox') e.preventDefault(); ACT[el.dataset.act](el); });
+const FORMS = { fBlank: printBlankSheet, fLogin: submitLogin, fEntry: submitEntry, fCrud: submitCrud, fParams: submitParams, fLimit: submitLimit };
+document.addEventListener('submit', e => { const fn = FORMS[e.target.id]; if (fn) { e.preventDefault(); fn(e.target); } });
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.f) { const k = t.dataset.f; if (k === 'all') S.f.all = t.checked; else if (k === 'month') { if (!t.value) return; S.f.month = t.value; } else S.f[k] = t.value; renderView(); return; }
+  if (t.dataset.ex) { S.ex[t.dataset.ex] = t.value; if (t.dataset.ex === 'dim') S.ex.chart = 'auto'; $('#explorer').innerHTML = explorerHTML(); return; }
+  if (t.dataset.heat) { S.heatYear = +t.value; $('#heat').innerHTML = heatHTML(); return; }
+  if (t.id === 'narr-voice') { try { localStorage.setItem(VOICE_KEY, t.value); } catch (e) {} if (NARR.playing) narrSpeak(); return; }
+  if (t.id === 'narr-speed') { if (NARR.playing) narrSpeak(); return; }
+  if (t.hasAttribute('data-mode')) { const on = t.checked; setMode(on ? 'demo' : 'real'); return; }
+  if (t.dataset.cfg) { setCfg(t.dataset.cfg, t.checked); return; }
+  if (t.closest('#fBlank')) { blankInfo(); return; }
+  if (t.id === 'rep') { S.rep = t.value; renderView(); return; }
+  if (t.id === 'chkAll') { $$('.chk-env').forEach(c => { c.checked = t.checked; }); return; }
+  if (t.id === 'empSel') { addEmp(t.value); return; }
+  if (t.id === 'impFile') { const f = t.files[0]; t.value = ''; importFile(f); return; }
+  if (t.id === 'impCfg' || t.id === 'impBackup' || t.id === 'impCfgLogin') { const f = t.files[0]; t.value = ''; importJSON(f, { fromLogin: t.id === 'impCfgLogin' }); return; }
+  if (t.closest('#fEntry')) {
+    const d = S.draft;
+    if (t.name === 'sectorId') { d.sectorId = t.value; d.emps = []; renderEmpPick(); }
+    else if (t.name === 'apoio') { d.apoio = t.checked; renderEmpPick(); }
+    else if (t.name === 'reasonId') { $('#w-outro').hidden = !isOutro(t.value); }
+    else if (t.name === 'hasInt') { $('#w-int').hidden = !t.checked; }
+    else if (t.name === 'opcaoId') { d.touched = true; const el = ef(); if (el.preco) el.preco.value = t.value ? num2(snackPrice(t.value)) : ''; if (el.qtd && t.value && !(+el.qtd.value > 0)) el.qtd.value = 1; }
+    else if (t.name === 'qtd') d.touched = true;
+    d.ack = false; entryChanged(); return;
+  }
+  if (t.closest('#fCrud')) syncWhen();
+});
+let qTimer;
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.f === 'q') { S.f.q = t.value; clearTimeout(qTimer); qTimer = setTimeout(refreshEntriesTable, 150); }
+  else if (t.closest('#fBlank')) blankInfo();
+  else if (t.closest('#fEntry') && ['start', 'end', 'date', 'intIni', 'intFim', 'qtd', 'preco'].includes(t.name)) { S.draft.ack = false; entryChanged(); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'empNewName') { e.preventDefault(); saveNewEmp(); } else if (e.key === 'Enter' && e.target.dataset.qf) { e.preventDefault(); e.target.closest('[data-qa]').querySelector('[data-act="qa-save"]').click(); } });
+
+/* ================= inicialização ================= */
+(async function boot() {
+  try { await DB.open(); await loadAll(); await ensureDefaultRH(); }
+  catch (err) { $('#app').innerHTML = `<div class="loginwrap"><div class="logincard"><h2>Não foi possível abrir o armazenamento local</h2><p>Este navegador bloqueou o IndexedDB (modo anônimo ou política da empresa). Abra em uma janela normal.</p><p class="muted small">${esc(err.message || err)}</p></div></div>`; return; }
+  try { S.me = S.users.find(u => u.id === sessionStorage.getItem('he_uid')) || null; } catch (e) {}
+  render();
+})();
+</script>
+</body>
+</html>
