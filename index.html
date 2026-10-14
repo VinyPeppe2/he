@@ -52,7 +52,7 @@
   #printArea .printvis{display:grid;gap:10px;margin:0 0 12px}
   #printArea .kpi,#printArea .panel{box-shadow:none;border:1px solid #c9d1e0;break-inside:avoid;background:#fff}
   #printArea .kpi{padding:8px 10px}#printArea .kn{font-size:1.3rem}#printArea .kn.txt{font-size:.9rem}
-  #printArea .rcards,#printArea .kpis{grid-template-columns:repeat(4,1fr);gap:8px}
+  #printArea .rcards,#printArea .kpis{grid-template-columns:repeat(5,1fr);gap:8px}
   #printArea .grid2{grid-template-columns:1fr 1fr;gap:10px}
   #printArea .panel{padding:10px}
   #printArea svg.col{max-width:100%}
@@ -487,6 +487,23 @@ const can = k => isRH() || !!S.settings.perm[k];          // ação permitida
 const showMoney = () => S.me.perfil !== 'lider' || !!S.settings.perm.verCustos;
 const canEdit = e => isRH() || (S.me.perfil === 'lider' && e.sectorId === S.me.sectorId && e.status === 'rascunho');
 const snackLabel = o => o.nome;
+/* ---- horas do setor x horas de pessoas ----
+   Horas de pessoas = soma do tempo de cada colaborador (10 pessoas x 2 h = 20 h).
+   Horas do setor   = tempo em que o setor teve gente em hora extra, contado uma vez só por dia (10 pessoas x 2 h juntas = 2 h). */
+function segsOf(e) {
+  const a = toMin(e.start), b = a + (e.bruta || durMin(e.start, e.end));
+  if (e.hasInt && e.intIni && e.intFim) { let i1 = toMin(e.intIni), i2 = toMin(e.intFim); if (i1 < a) i1 += 1440; if (i2 < i1) i2 += 1440; if (i1 > a && i2 > i1 && i2 < b) return [[a, i1], [i2, b]]; }
+  return [[a, b]];
+}
+function unionMin(segs) { segs.sort((x, y) => x[0] - y[0]); let tot = 0, cs = null, ce = null; for (const [a, b] of segs) { if (ce === null || a > ce) { if (ce !== null) tot += ce - cs; cs = a; ce = b; } else if (b > ce) ce = b; } return ce === null ? 0 : tot + (ce - cs); }
+function sectorTime(list) {
+  const by = new Map(); list.forEach(e => { const k = e.sectorId + '|' + e.date; if (!by.has(k)) by.set(k, { sec: e.sectorId, date: e.date, segs: [], pessoa: 0, emps: new Set() }); const g = by.get(k); g.segs.push(...segsOf(e)); g.pessoa += e.min; g.emps.add(e.empId); });
+  const out = { min: 0, pessoa: sum(list, e => e.min), days: by.size, bySector: new Map(), byDay: new Map() };
+  by.forEach(g => { const m = unionMin(g.segs); out.min += m; out.byDay.set(g.date, (out.byDay.get(g.date) || 0) + m);
+    const t = out.bySector.get(g.sec) || { min: 0, days: 0, pessoa: 0, emps: new Set() }; t.min += m; t.days++; t.pessoa += g.pessoa; g.emps.forEach(x => t.emps.add(x)); out.bySector.set(g.sec, t); });
+  out.avg = out.min ? out.pessoa / out.min : 0; return out;
+}
+const fmtAvg = v => (Math.round(v * 10) / 10).toString().replace('.', ',');
 /* ---- teto mensal de horas por colaborador (switch + valor editados pelo RH) ---- */
 const limMes = () => (S.settings.limiteAtivo !== false && S.settings.limiteMes > 0) ? S.settings.limiteMes : 0;
 const limAviso = () => Math.min(99, Math.max(1, S.settings.limiteAviso || 80));
@@ -785,7 +802,7 @@ function tetoPanel() {
 function vDash() {
   const list = filtered(), money$ = showMoney();
   const totalMin = sum(list, e => e.min), snacks = sum(list, e => e.opcaoId ? e.qtd : 0), totalCost = sum(list, cost), people = new Set(list.map(e => e.empId)).size;
-  const rasc = list.filter(e => e.status === 'rascunho').length;
+  const rasc = list.filter(e => e.status === 'rascunho').length, st = sectorTime(list);
   const byReason = [...groupBy(list, e => reasonText(e.reasonId))].map(([l, a]) => ({ l, v: sum(a, e => e.min), a })).sort((a, b) => b.v - a.v);
   const kpi = (l, n, s, c = '', txt = false) => `<div class="kpi ${c}"><div class="kl">${l}</div><div class="kn ${txt ? 'txt' : ''}" ${txt ? `title="${esc(n)}"` : ''}>${txt ? esc(n) : n}</div><div class="ks">${s || ''}</div></div>`;
   let body;
@@ -809,9 +826,9 @@ function vDash() {
     if (secs.length > 6) sSeries.push({ id: null, name: 'Outros setores', color: 'var(--c6)' });
     const gargalos = byReason.slice(0, 8).map(r => ({ l: r.l, v: sSeries.map(s => sum(r.a.filter(e => s.id ? e.sectorId === s.id : !sSeries.some(x => x.id === e.sectorId)), e => e.min) / 60) }));
     body = `<div class="grid2">
-      <section data-sec="dia" class="panel"><h2>${S.f.all ? 'Horas líquidas por mês' : 'Horas líquidas por dia'}</h2>${colChart(series, S.f.all ? 'Horas por mês' : 'Horas por dia')}</section>
+      <section data-sec="dia" class="panel"><h2>${S.f.all ? 'Horas de pessoas por mês' : 'Horas de pessoas por dia'}</h2>${colChart(series, S.f.all ? 'Horas por mês' : 'Horas por dia')}</section>
       <section class="panel"><h2>Evolução mensal por setor</h2>${lineChart(months.map(m => MES3[+m.slice(5) - 1] + '/' + m.slice(2, 4)), lines, 'Evolução mensal de horas por setor')}</section>
-      ${scopeSector() ? '' : `<section data-sec="setor" class="panel"><h2>Horas líquidas por setor</h2>${barList(secItems, { fmt: fmtH })}</section>`}
+      ${scopeSector() ? '' : `<section data-sec="setor" class="panel"><h2>Setores: tempo do setor × horas de pessoas</h2><div class="tblwrap"><table class="tbl"><thead><tr><th>Setor</th><th class="num" title="Dias com hora extra">Dias</th><th class="num" title="Tempo do setor em hora extra, contado uma vez">H. setor</th><th class="num" title="Soma do tempo de cada colaborador">H. pessoas</th><th class="num" title="Média de pessoas trabalhando juntas">Média</th></tr></thead><tbody>${[...st.bySector].sort((a, b) => b[1].min - a[1].min).slice(0, 10).map(([id, t]) => `<tr><td data-label="Setor">${esc(sectorName(id))}</td><td data-label="Dias" class="num">${t.days}</td><td data-label="H. setor" class="num">${fmtH(t.min)}</td><td data-label="H. pessoas" class="num">${fmtH(t.pessoa)}</td><td data-label="Média" class="num">${fmtAvg(t.pessoa / t.min)}</td></tr>`).join('')}</tbody></table></div><p class="muted small" style="margin-top:8px">H. setor conta o tempo uma vez só; H. pessoas soma cada colaborador; Média = pessoas trabalhando juntas.</p></section>`}
       <section data-sec="lanches" class="panel"><h2>Distribuição de lanches (quantidade)</h2>${snackItems.length ? donut(snackItems, sum(snackItems, x => x.v), v => String(v), 'Lanches por opção') : '<div class="empty">Nenhum lanche no período.</div>'}</section>
       <section data-sec="gargalos" class="panel" style="grid-column:1/-1"><h2>Gargalos: motivos apontados por setor (horas)</h2>${stackList(gargalos, sSeries, v => fmtH(v * 60))}</section>
       ${tetoPanel()}
@@ -822,7 +839,8 @@ function vDash() {
   $('#view').innerHTML = `<div class="pagehead"><h1>Painel</h1><span class="muted">${esc(periodLabel())} · ${esc(scopeLabel())}</span><span class="sp"></span><span class="noprint toolbar">${ibtn('narr-start', 'speaker', 'Ouvir resumo')}${ibtn('print-dash', 'print', 'PDF')}</span></div>
     ${filterBar()}
     <div class="kpis">
-      ${kpi('Horas líquidas', fmtH(totalMin), `${list.length} lançamentos · ${people} colaboradores`)}
+      ${kpi('Horas do setor', fmtH(st.min), st.min ? `tempo em hora extra, contado uma vez · ${st.days} dias de setor` : 'sem hora extra no período')}
+      ${kpi('Horas de pessoas', fmtH(totalMin), `soma de ${people} colaboradores · média de ${fmtAvg(st.avg)} por vez`)}
       ${kpi('Lanches', snacks, money$ ? `${money(totalCost)} no período` : 'unidades no período', 'warm')}
       ${kpi('Rascunhos', rasc, rasc ? '<button class="btn sm" data-act="goto-draft">Ver rascunhos</button>' : 'nada pendente de envio', rasc ? 'attn' : '')}
       ${kpi('Maior gargalo', byReason[0] ? byReason[0].l : '—', byReason[0] ? fmtH(byReason[0].v) : '', '', true)}
@@ -868,7 +886,7 @@ function vEntries() {
 const summaryCard = (l, n, s = '', c = '') => `<div class="kpi ${c}"><div class="kl">${l}</div><div class="kn">${n}</div><div class="ks">${s}</div></div>`;
 function summaryCards(list) {
   const m$ = showMoney(), snacks = sum(list, e => e.opcaoId ? e.qtd : 0);
-  return `<div class="rcards">${summaryCard('Horas líquidas', fmtH(sum(list, e => e.min)), `${list.length} lançamentos`)}${summaryCard('Colaboradores', new Set(list.map(e => e.empId)).size, 'com hora extra')}
+  return `<div class="rcards">${summaryCard('Horas do setor', fmtH(sectorTime(list).min), 'tempo do setor, contado uma vez')}${summaryCard('Horas de pessoas', fmtH(sum(list, e => e.min)), `${list.length} lançamentos`)}${summaryCard('Colaboradores', new Set(list.map(e => e.empId)).size, 'com hora extra')}
     ${summaryCard('Lanches', snacks, m$ ? money(sum(list, cost)) : 'unidades', 'warm')}${summaryCard('Rascunhos', list.filter(e => e.status === 'rascunho').length, 'ainda não enviados ao RH')}</div>`;
 }
 function printEntries() {
@@ -884,10 +902,10 @@ const REPORTS = { colab: 'Horas por colaborador', setor: 'Horas por setor', moti
 function buildReport(kind) {
   const list = filtered(), m$ = showMoney(), total = sum(list, e => e.min), qty = a => sum(a, e => e.opcaoId ? e.qtd : 0);
   let r;
-  if (kind === 'colab') r = { head: ['Colaborador', 'Setor', 'Lançamentos', 'Horas líquidas', 'Lanches'], types: ['t', 't', 'n', 'h', 'n'], rows: [...groupBy(list, e => e.empId)].map(([id, a]) => [empName(id), sectorName(S.em.get(id)?.sectorId || a[0].sectorId), a.length, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => y[3] - x[3]) };
-  else if (kind === 'setor') r = { head: ['Setor', 'Colaboradores', 'Lançamentos', 'Horas líquidas', 'Lanches'], types: ['t', 'x', 'n', 'h', 'n'], rows: [...groupBy(list, e => e.sectorId)].map(([id, a]) => [sectorName(id), new Set(a.map(e => e.empId)).size, a.length, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => y[3] - x[3]) };
-  else if (kind === 'motivo') r = { head: ['Motivo', 'Lançamentos', 'Horas líquidas', '% das horas', 'Lanches'], types: ['t', 'n', 'h', 'p', 'n'], rows: [...groupBy(list, e => reasonText(e.reasonId))].map(([l, a]) => [l, a.length, sum(a, e => e.min), total ? sum(a, e => e.min) / total * 100 : 0, qty(a), sum(a, cost)]).sort((x, y) => y[2] - x[2]) };
-  else if (kind === 'dia') r = { head: ['Data', 'Lançamentos', 'Pessoas no dia', 'Horas líquidas', 'Lanches'], types: ['d', 'n', 'x', 'h', 'n'], rows: [...groupBy(list, e => e.date)].map(([d, a]) => [d, a.length, new Set(a.map(e => e.empId)).size, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => x[0].localeCompare(y[0])) };
+  if (kind === 'colab') r = { head: ['Colaborador', 'Setor', 'Lançamentos', 'Horas de pessoas', 'Lanches'], types: ['t', 't', 'n', 'h', 'n'], rows: [...groupBy(list, e => e.empId)].map(([id, a]) => [empName(id), sectorName(S.em.get(id)?.sectorId || a[0].sectorId), a.length, sum(a, e => e.min), qty(a), sum(a, cost)]).sort((x, y) => y[3] - x[3]) };
+  else if (kind === 'setor') { const st = sectorTime(list); r = { head: ['Setor', 'Colaboradores', 'Dias com hora extra', 'Horas de pessoas', 'Horas do setor', 'Média de pessoas', 'Lanches'], types: ['t', 'x', 'n', 'h', 'h', 'x', 'n'], rows: [...groupBy(list, e => e.sectorId)].map(([id, a]) => { const t = st.bySector.get(id); return [sectorName(id), new Set(a.map(e => e.empId)).size, t.days, sum(a, e => e.min), t.min, fmtAvg(t.pessoa / (t.min || 1)), qty(a), sum(a, cost)]; }).sort((x, y) => y[3] - x[3]) }; }
+  else if (kind === 'motivo') r = { head: ['Motivo', 'Lançamentos', 'Horas de pessoas', '% das horas', 'Lanches'], types: ['t', 'n', 'h', 'p', 'n'], rows: [...groupBy(list, e => reasonText(e.reasonId))].map(([l, a]) => [l, a.length, sum(a, e => e.min), total ? sum(a, e => e.min) / total * 100 : 0, qty(a), sum(a, cost)]).sort((x, y) => y[2] - x[2]) };
+  else if (kind === 'dia') { const st = sectorTime(list); r = { head: ['Data', 'Lançamentos', 'Pessoas no dia', 'Horas de pessoas', 'Horas dos setores', 'Lanches'], types: ['d', 'n', 'x', 'h', 'h', 'n'], rows: [...groupBy(list, e => e.date)].map(([d, a]) => [d, a.length, new Set(a.map(e => e.empId)).size, sum(a, e => e.min), st.byDay.get(d) || 0, qty(a), sum(a, cost)]).sort((x, y) => x[0].localeCompare(y[0])) }; }
   else r = { head: ['Opção de lanche', 'Quantidade', 'Lançamentos'], types: ['t', 'n', 'n'], rows: [...groupBy(list.filter(e => e.opcaoId), e => e.opcaoId)].map(([id, a]) => [snackName(id), qty(a), a.length, sum(a, cost)]).sort((x, y) => y[1] - x[1]) };
   if (m$) { r.head.push('Custo dos lanches'); r.types.push('m'); } else r.rows.forEach(x => x.pop());
   return r;
@@ -914,7 +932,8 @@ function reportVisual(r) {
   const valIdx = S.rep === 'lanche' ? 1 : hrsIdx, fmtV = S.rep === 'lanche' ? (v => String(v)) : fmtH;
   const kids = [];
   const lead = { colab: 'Quem mais fez', setor: 'Setor com mais horas', motivo: 'Principal motivo', dia: 'Dia mais pesado', lanche: 'Opção mais pedida' }[S.rep];
-  kids.push(card('Horas líquidas', fmtH(totalMin), `${list.length} lançamentos`));
+  kids.push(card('Horas do setor', fmtH(sectorTime(list).min), 'tempo do setor, contado uma vez'));
+  kids.push(card('Horas de pessoas', fmtH(totalMin), `${list.length} lançamentos`));
   kids.push(card(S.rep === 'lanche' ? 'Lanches' : 'Lanches', snacks, m$ ? money(sum(list, cost)) + ' no período' : 'unidades', 'warm'));
   kids.push(card('Colaboradores', people, 'com hora extra'));
   kids.push(card(lead, S.rep === 'dia' ? fmtDate(top[0]) : top[0], `${fmtV(top[valIdx])}${S.rep === 'motivo' ? ' · ' + top[3].toFixed(0) + '%' : ''}`, 'attn', S.rep !== 'dia'));
@@ -1346,7 +1365,8 @@ const pc = v => Math.round(v) + '%';
 function insights(a) {
   const out = [], m$ = showMoney(), I = (tone, title, text) => out.push({ tone, title, text });
   if (!a.n) { I('info', 'Sem lançamentos no período', 'Escolha outro mês ou marque "Todo o período" para ver as análises.'); return out; }
-  I('info', 'Resumo do período', `Foram ${fmtH(a.totalMin)} líquidas em ${a.n} lançamentos, feitos por ${a.people} colaboradores. Cada lançamento teve em média ${fmtH(a.totalMin / a.n)}.`);
+  I('info', 'Resumo do período', `Foram ${fmtH(a.totalMin)} de horas de pessoas em ${a.n} lançamentos, feitos por ${a.people} colaboradores. Cada lançamento teve em média ${fmtH(a.totalMin / a.n)}.`);
+  { const t = sectorTime(a.list); if (t.min) I('info', 'Horas do setor × horas de pessoas', `Os setores ficaram ${fmtH(t.min)} em hora extra (contando cada período uma vez só, em ${t.days} dias de setor). Somando cada colaborador, são ${fmtH(t.pessoa)} de horas de pessoas: em média ${fmtAvg(t.avg)} pessoas trabalhando juntas por vez.`); }
   if (a.cmp) { const up = a.cmp.pct > 0.5, dn = a.cmp.pct < -0.5; I(up ? 'warn' : dn ? 'ok' : 'info', 'Comparação com o mês anterior', `${monthLabel(a.cmp.cur)} somou ${fmtH(a.cmp.curMin)}, contra ${fmtH(a.cmp.prevMin)} em ${mLong(a.cmp.prev)}. ${up ? 'Alta' : dn ? 'Queda' : 'Variação'} de ${pc(Math.abs(a.cmp.pct))}${!S.f.all && a.proj ? '. O mês ainda está em andamento, então a comparação final pode mudar' : ''}.`); }
   if (a.proj) I('info', 'Projeção do fechamento', `No ritmo atual, de ${fmtH(a.proj.pace)} por dia do calendário, o mês deve fechar perto de ${fmtH(a.proj.total)}. É uma estimativa simples, sem considerar feriados ou picos.`);
   if (a.trend) I(a.trend.slope > 0 ? 'warn' : 'ok', 'Tendência dos últimos meses', `Nos últimos ${a.trend.n} meses as horas ${a.trend.slope > 0 ? 'sobem' : 'caem'} cerca de ${fmtH(Math.abs(a.trend.slope))} por mês (ajuste de ${pc(a.trend.r2 * 100)}). Se o padrão continuar, o próximo mês fica perto de ${fmtH(Math.max(0, a.trend.next))}.`);
@@ -1375,7 +1395,7 @@ const DIMS = {
   weekday: { l: 'Dia da semana', ord: true, key: e => new Date(e.date + 'T12:00:00').getDay(), name: i => WD[i].split('-')[0].replace(/^./, c => c.toUpperCase()).slice(0, 3), order: [1, 2, 3, 4, 5, 6, 0] },
   month: { l: 'Mês', ord: true, key: e => e.date.slice(0, 7), name: m => MES3[+m.slice(5) - 1] + '/' + m.slice(2, 4) }, day: { l: 'Dia', ord: true, key: e => e.date, name: d => String(+d.slice(8)) }
 };
-const METRICS = { min: { l: 'Horas líquidas', f: fmtH, v: e => e.min, c: v => v / 60 }, n: { l: 'Nº de lançamentos', f: v => String(v), v: () => 1 }, snack: { l: 'Lanches', f: v => String(v), v: e => e.opcaoId ? e.qtd : 0 }, cost: { l: 'Custo dos lanches', f: money, v: cost, money: true } };
+const METRICS = { min: { l: 'Horas de pessoas', f: fmtH, v: e => e.min, c: v => v / 60 }, n: { l: 'Nº de lançamentos', f: v => String(v), v: () => 1 }, snack: { l: 'Lanches', f: v => String(v), v: e => e.opcaoId ? e.qtd : 0 }, cost: { l: 'Custo dos lanches', f: money, v: cost, money: true } };
 S.ex = { dim: 'reason', metric: 'min', chart: 'auto', top: 10 };
 function exploreData() {
   const x = S.ex, D = DIMS[x.dim], M = METRICS[x.metric], list = filtered();
@@ -1487,7 +1507,7 @@ function narrSegments() {
     S_(`Resumo do painel. ${where}.`, '#view .kpis'); cards('#view .kpis .kpi');
     const sec = (id, t) => { const el = $(`[data-sec="${id}"]`); if (el && t) S_(spk(t), el); };
     const best = a.byDay[0]; if (best) sec('dia', `Nos dias, o mais pesado foi ${S.f.all ? fmtDate(best.k) : 'o dia ' + +best.k.slice(8)}, com ${fmtH(best.v)}.`);
-    if (a.bySector.length) sec('setor', `O setor com mais horas é ${a.bySector[0].l}, com ${fmtH(a.bySector[0].v)}, ${pc(a.bySector[0].v / a.totalMin * 100)} do total.`);
+    if (a.bySector.length) { const t = sectorTime(a.list), top = [...t.bySector].sort((p, q) => q[1].min - p[1].min)[0]; sec('setor', `O setor que mais ficou em hora extra é ${sectorName(top[0])}, com ${fmtH(top[1].min)} de tempo do setor e ${fmtH(top[1].pessoa)} somando as pessoas, em média ${fmtAvg(top[1].pessoa / top[1].min)} pessoas por vez.`); }
     if (a.snacks) { const sn = [...groupBy(a.list.filter(e => e.opcaoId), e => e.opcaoId)].map(([k, x]) => [snackName(k), sum(x, e => e.qtd)]).sort((p, q) => q[1] - p[1])[0]; sec('lanches', `Foram ${a.snacks} lanches. O mais pedido foi ${sn[0]}, com ${sn[1]} unidades.`); }
     if (a.byReason.length) sec('gargalos', `O principal gargalo é ${a.byReason[0].l.replace(/\s*\(.*$/, '')}, com ${fmtH(a.byReason[0].v)}, ${pc(a.byReason[0].v / a.totalMin * 100)} das horas.`);
     { const t = teto(); if (t && (t.over.length || t.near.length)) sec('teto', `Teto mensal de ${t.L} horas: ${t.over.length} pessoas no limite ou acima e ${t.near.length} perto, a partir de ${t.A} por cento.`); }
